@@ -36,7 +36,7 @@ func work(c config.Config) error {
 		return fmt.Errorf("input plugin error: %w", err)
 	}
 
-	log.Printf("fetched from %s %d line(s). flush to %s...", c.Input, len(timeline.Messages), c.Output)
+	log.Printf("fetched data from %s %d line(s). flush to %s...", c.Input, len(timeline.Messages), c.Output)
 
 	if len(timeline.Messages) == 0 {
 		return nil
