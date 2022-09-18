@@ -27,6 +27,7 @@ func (p Gmail) Flush(timeline *message.Timeline) error {
 	css := `<style>
 h2 {
 	font-size: 1rem;
+	margin: 1rem 0; 
 }
 
 p {

@@ -54,6 +54,8 @@ func fetcher(c config.Config) input.Fetcher {
 		return input.Dummy{}
 	case "rtm":
 		return input.RtmFetcher(c)
+	case "twitter":
+		return input.TwitterFetcher(c)
 	default:
 		return nil
 	}
