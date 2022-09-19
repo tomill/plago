@@ -16,7 +16,7 @@ type Gmail struct {
 	appPassword string
 }
 
-func GmailFlusher(c config.Config) *Gmail {
+func GmailFlusher(c config.Config) Flusher {
 	return &Gmail{
 		account:     c.GmailAccount,
 		appPassword: c.GmailAppPassword,

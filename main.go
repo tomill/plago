@@ -1,75 +1,60 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"time"
 
+	"github.com/golobby/container/v3"
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/input"
 	"github.com/tomill/centre/output"
 )
 
 func main() {
-	c := config.GetOptions()
+	c := container.New()
+	container.MustSingleton(c, config.GetOptions)
 
-	if err := work(c); err != nil {
-		log.Fatal(err)
+	for name, fn := range map[string]func(config.Config) input.Fetcher{
+		"rtm":     input.RtmFetcher,
+		"twitter": input.TwitterFetcher,
+	} {
+		container.MustNamedTransientLazy(c, name, fn)
 	}
-}
-
-func work(c config.Config) error {
-	log.Println(c)
-	defer log.Println("done.")
-
-	in := fetcher(c)
-	if in == nil {
-		return fmt.Errorf("failed to load input plugin: %q", c.Input)
-	}
-
-	out := flusher(c)
-	if out == nil {
-		return fmt.Errorf("failed to load output plugin: %q", c.Output)
+	for name, fn := range map[string]func(config.Config) output.Flusher{
+		"stdout": output.StdoutFlusher,
+		"dump":   output.DumpFlusher,
+		"gmail":  output.GmailFlusher,
+	} {
+		container.MustNamedTransientLazy(c, name, fn)
 	}
 
-	timeline, err := in.Fetch()
+	err := c.Call(func(conf config.Config) error {
+		var in input.Fetcher
+		var out output.Flusher
+		container.MustNamedResolve(c, &in, conf.Input)
+		container.MustNamedResolve(c, &out, conf.Output)
+
+		defer log.Println("done.")
+		log.Printf("%s to %s; about %d hour(s) %s -> %s",
+			conf.Input,
+			conf.Output,
+			conf.Hours,
+			conf.Since().Format(time.RFC3339),
+			conf.Until.Format(time.RFC3339))
+
+		timeline, err := in.Fetch()
+		if err != nil {
+			return err
+		}
+
+		log.Printf("fetched data from %s %d line(s). flush to %s...", conf.Input, len(timeline.Messages), conf.Output)
+		if len(timeline.Messages) == 0 {
+			return nil
+		}
+
+		return out.Flush(timeline)
+	})
 	if err != nil {
-		return fmt.Errorf("input plugin error: %w", err)
-	}
-
-	log.Printf("fetched data from %s %d line(s). flush to %s...", c.Input, len(timeline.Messages), c.Output)
-
-	if len(timeline.Messages) == 0 {
-		return nil
-	}
-	if err := out.Flush(timeline); err != nil {
-		return fmt.Errorf("output plugin error: %w", err)
-	}
-
-	return nil
-}
-
-func fetcher(c config.Config) input.Fetcher {
-	switch c.Input {
-	case "test":
-		return input.Dummy{}
-	case "rtm":
-		return input.RtmFetcher(c)
-	case "twitter":
-		return input.TwitterFetcher(c)
-	default:
-		return nil
-	}
-}
-
-func flusher(c config.Config) output.Flusher {
-	switch c.Output {
-	case "stdout":
-		return &output.Stdout{}
-	case "dump":
-		return &output.Dump{}
-	case "gmail":
-		return output.GmailFlusher(c)
-	default:
-		return nil
+		log.Fatal(err)
 	}
 }
