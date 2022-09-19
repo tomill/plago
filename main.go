@@ -15,6 +15,7 @@ func main() {
 	container.MustSingleton(c, config.GetOptions)
 
 	for name, fn := range map[string]func(config.Config) input.Fetcher{
+		"dummy":   input.DummyFetcher,
 		"rtm":     input.RtmFetcher,
 		"twitter": input.TwitterFetcher,
 	} {
@@ -34,14 +35,10 @@ func main() {
 		container.MustNamedResolve(c, &in, conf.Input)
 		container.MustNamedResolve(c, &out, conf.Output)
 
+		log.Printf("centre (%s) %s to %s", conf.Version(), conf.Input, conf.Output)
 		defer log.Println("done.")
-		log.Printf("%s to %s; about %d hour(s) %s -> %s",
-			conf.Input,
-			conf.Output,
-			conf.Hours,
-			conf.Since().Format(time.RFC3339),
-			conf.Until.Format(time.RFC3339))
 
+		log.Printf("about %d hour(s) %s - %s", conf.Hours, conf.Since().Format(time.RFC3339), conf.Until.Format(time.RFC3339))
 		timeline, err := in.Fetch()
 		if err != nil {
 			return err
