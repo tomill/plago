@@ -110,7 +110,7 @@ func (p Feed) Fetch() (*message.Timeline, error) {
 
 	timeline := &message.Timeline{
 		Source:  "feed",
-		Subject: p.since.Format("2006-01-02 feed"),
+		Subject: p.since.Format("2006-01-02"),
 	}
 	for _, item := range contentsResponse.Items {
 		msg := message.Message{
