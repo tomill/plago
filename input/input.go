@@ -79,5 +79,6 @@ func DummyFetcher(config.Config) Fetcher {
 }
 
 func (p Dummy) Fetch() (*message.Timeline, error) {
+	p.Timeline.Sort()
 	return p.Timeline, nil
 }

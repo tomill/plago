@@ -11,38 +11,39 @@ import (
 )
 
 func main() {
-	c := container.New()
-	container.MustSingleton(c, config.GetOptions)
+	con := container.New()
+	container.MustSingleton(con, config.GetOptions)
 
 	for name, fn := range map[string]func(config.Config) input.Fetcher{
 		"dummy":   input.DummyFetcher,
 		"rtm":     input.RtmFetcher,
 		"twitter": input.TwitterFetcher,
+		"feed":    input.FeedFetcher,
 	} {
-		container.MustNamedTransientLazy(c, name, fn)
+		container.MustNamedTransientLazy(con, name, fn)
 	}
 	for name, fn := range map[string]func(config.Config) output.Flusher{
 		"dump":  output.DumpFlusher,
 		"gmail": output.GmailFlusher,
 	} {
-		container.MustNamedTransientLazy(c, name, fn)
+		container.MustNamedTransientLazy(con, name, fn)
 	}
 
-	err := c.Call(func(conf config.Config) error {
-		log.Printf("centre version %s", conf.Version())
+	err := con.Call(func(c config.Config) error {
+		log.Printf("centre version %s", c.Version())
 		var in input.Fetcher
 		var out output.Flusher
-		container.MustNamedResolve(c, &in, conf.Input)
-		container.MustNamedResolve(c, &out, conf.Output)
+		container.MustNamedResolve(con, &in, c.Input)
+		container.MustNamedResolve(con, &out, c.Output)
 
-		log.Printf("%s to %s; %d hour(s) %s - %s", conf.Input, conf.Output, conf.Hours,
-			conf.Since.Format(time.RFC3339), conf.Until.Format(time.RFC3339))
+		log.Printf("%s to %s; %d hour(s) %s - %s", c.Input, c.Output, c.Hours,
+			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
 		timeline, err := in.Fetch()
 		if err != nil {
 			return err
 		}
 
-		log.Printf("fetched data from %s %d line(s). flush to %s...", conf.Input, len(timeline.Messages), conf.Output)
+		log.Printf("fetched data from %s %d line(s). flush to %s...", c.Input, len(timeline.Messages), c.Output)
 		if len(timeline.Messages) == 0 {
 			return nil
 		}
