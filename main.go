@@ -38,7 +38,7 @@ func main() {
 		log.Printf("centre (%s) %s to %s", conf.Version(), conf.Input, conf.Output)
 		defer log.Println("done.")
 
-		log.Printf("about %d hour(s) %s - %s", conf.Hours, conf.Since().Format(time.RFC3339), conf.Until.Format(time.RFC3339))
+		log.Printf("%d hour(s) %s - %s", conf.Hours, conf.Since.Format(time.RFC3339), conf.Until.Format(time.RFC3339))
 		timeline, err := in.Fetch()
 		if err != nil {
 			return err
