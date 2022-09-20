@@ -22,23 +22,21 @@ func main() {
 		container.MustNamedTransientLazy(c, name, fn)
 	}
 	for name, fn := range map[string]func(config.Config) output.Flusher{
-		"stdout": output.StdoutFlusher,
-		"dump":   output.DumpFlusher,
-		"gmail":  output.GmailFlusher,
+		"dump":  output.DumpFlusher,
+		"gmail": output.GmailFlusher,
 	} {
 		container.MustNamedTransientLazy(c, name, fn)
 	}
 
 	err := c.Call(func(conf config.Config) error {
+		log.Printf("centre version %s", conf.Version())
 		var in input.Fetcher
 		var out output.Flusher
 		container.MustNamedResolve(c, &in, conf.Input)
 		container.MustNamedResolve(c, &out, conf.Output)
 
-		log.Printf("centre (%s) %s to %s", conf.Version(), conf.Input, conf.Output)
-		defer log.Println("done.")
-
-		log.Printf("%d hour(s) %s - %s", conf.Hours, conf.Since.Format(time.RFC3339), conf.Until.Format(time.RFC3339))
+		log.Printf("%s to %s; %d hour(s) %s - %s", conf.Input, conf.Output, conf.Hours,
+			conf.Since.Format(time.RFC3339), conf.Until.Format(time.RFC3339))
 		timeline, err := in.Fetch()
 		if err != nil {
 			return err

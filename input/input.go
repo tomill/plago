@@ -23,7 +23,6 @@ func DummyFetcher(config.Config) Fetcher {
 			Subject: "test",
 			Messages: []message.Message{
 				{
-					Section:   "main",
 					Timestamp: ts,
 					URL:       "https://example.com/1",
 					UserName:  "user1",
@@ -34,7 +33,7 @@ func DummyFetcher(config.Config) Fetcher {
 					URL:       "https://example.com/2",
 					Timestamp: ts.Add(2 * time.Minute),
 					UserName:  "user2",
-					Text:      "いいいいいいいいいいいいいいいいいいいいい",
+					Text:      "いいいいいいい<script>いいいいいいいいいいいいいい",
 				},
 				{
 					Section:   "sub",
