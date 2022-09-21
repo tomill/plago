@@ -17,8 +17,8 @@ func main() {
 	for name, fn := range map[string]func(config.Config) input.Fetcher{
 		"dummy":   input.DummyFetcher,
 		"rtm":     input.RtmFetcher,
-		"twitter": input.TwitterFetcher,
 		"feed":    input.FeedFetcher,
+		"twitter": input.TwitterFetcher,
 	} {
 		container.MustNamedTransientLazy(con, name, fn)
 	}
