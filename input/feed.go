@@ -11,6 +11,7 @@ import (
 	"github.com/tomill/centre/message"
 )
 
+// Feed https://github.com/theoldreader/api
 type Feed struct {
 	since  time.Time
 	tz     *time.Location
