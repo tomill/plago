@@ -38,6 +38,7 @@ func main() {
 
 		log.Printf("%s to %s; %d hour(s) %s - %s", c.Input, c.Output, c.Hours,
 			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
+
 		timeline, err := in.Fetch()
 		if err != nil {
 			return err

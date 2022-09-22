@@ -8,17 +8,17 @@ import (
 )
 
 type Fetcher interface {
-	Fetch() (*message.Timeline, error)
+	Fetch() (message.Timeline, error)
 }
 
 type Dummy struct {
-	Timeline *message.Timeline
+	Timeline message.Timeline
 }
 
 func DummyFetcher(config.Config) Fetcher {
 	var ts = time.Date(2022, 9, 1, 12, 02, 0, 0, time.FixedZone("Asia/Tokyo", 9*60*60))
 	return &Dummy{
-		Timeline: &message.Timeline{
+		Timeline: message.Timeline{
 			Source:  "dummy",
 			Subject: "test",
 			Messages: []message.Message{
@@ -78,7 +78,7 @@ func DummyFetcher(config.Config) Fetcher {
 	}
 }
 
-func (p Dummy) Fetch() (*message.Timeline, error) {
+func (p Dummy) Fetch() (message.Timeline, error) {
 	p.Timeline.Sort()
 	return p.Timeline, nil
 }

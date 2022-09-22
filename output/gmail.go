@@ -27,7 +27,7 @@ func GmailFlusher(c config.Config) Flusher {
 	}
 }
 
-func (p Gmail) Flush(timeline *message.Timeline) error {
+func (p Gmail) Flush(timeline message.Timeline) error {
 	body, err := p.html(timeline)
 	if err != nil {
 		return err
@@ -55,7 +55,7 @@ func (p Gmail) Flush(timeline *message.Timeline) error {
 	return nil
 }
 
-func (p Gmail) html(timeline *message.Timeline) (string, error) {
+func (p Gmail) html(timeline message.Timeline) (string, error) {
 	body := `
 <style>
 h2 {

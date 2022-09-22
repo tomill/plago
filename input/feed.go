@@ -21,7 +21,8 @@ func FeedFetcher(c config.Config) Fetcher {
 	return &Feed{
 		since: c.Since,
 		tz:    c.TimeZone,
-		client: sling.New().Base("https://theoldreader.com/").
+		client: sling.New().
+			Base("https://theoldreader.com/").
 			Set("Authorization", "GoogleLogin auth="+c.TheOldReaderToken),
 	}
 }
@@ -86,7 +87,12 @@ func (p Feed) call(req *sling.Sling, v interface{}) error {
 	return nil
 }
 
-func (p Feed) Fetch() (*message.Timeline, error) {
+func (p Feed) Fetch() (message.Timeline, error) {
+	timeline := message.Timeline{
+		Source:  "feed",
+		Subject: p.since.Format("2006-01-02"),
+	}
+
 	var searchResponse SearchResponse
 	{
 		req := p.client.New().Get("reader/api/0/stream/items/ids?output=json").QueryStruct(SearchQuery{
@@ -95,7 +101,7 @@ func (p Feed) Fetch() (*message.Timeline, error) {
 			Numbers:      1000,
 		})
 		if err := p.call(req, &searchResponse); err != nil {
-			return nil, err
+			return timeline, err
 		}
 	}
 
@@ -104,14 +110,10 @@ func (p Feed) Fetch() (*message.Timeline, error) {
 		req := p.client.New().Post("reader/api/0/stream/items/contents?output=json").
 			BodyForm(searchResponse.AsContentsQuery())
 		if err := p.call(req, &contentsResponse); err != nil {
-			return nil, err
+			return timeline, err
 		}
 	}
 
-	timeline := &message.Timeline{
-		Source:  "feed",
-		Subject: p.since.Format("2006-01-02"),
-	}
 	for _, item := range contentsResponse.Items {
 		msg := message.Message{
 			URL:       item.Canonical[0].Href,
@@ -127,16 +129,16 @@ func (p Feed) Fetch() (*message.Timeline, error) {
 
 		timeline.Append(msg)
 	}
+	timeline.Sort()
 
 	if len(timeline.Messages) > 0 {
 		query := searchResponse.AsContentsQuery()
 		query.Action = "user/-/state/com.google/read"
 		req := p.client.New().Post("reader/api/0/edit-tag").BodyForm(query)
 		if err := p.call(req, nil); err != nil {
-			return nil, err
+			return timeline, err
 		}
 	}
 
-	timeline.Sort()
 	return timeline, nil
 }
