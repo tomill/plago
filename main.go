@@ -15,11 +15,11 @@ func main() {
 	container.MustSingleton(con, config.GetOptions)
 
 	for name, fn := range map[string]func(config.Config) (input.Fetcher, error){
-		//"dummy":   input.DummyFetcher,
-		//"rtm":     input.RtmFetcher,
-		//"feed":    input.FeedFetcher,
-		//"twitter": input.TwitterFetcher,
-		"slack": input.SlackFetcher,
+		"dummy":   input.DummyFetcher,
+		"rtm":     input.RtmFetcher,
+		"feed":    input.FeedFetcher,
+		"twitter": input.TwitterFetcher,
+		"slack":   input.SlackFetcher,
 	} {
 		container.MustNamedTransientLazy(con, name, fn)
 	}
@@ -31,7 +31,6 @@ func main() {
 	}
 
 	err := con.Call(func(c config.Config) error {
-		log.Printf("centre version %s", c.Version())
 		var in input.Fetcher
 		var out output.Flusher
 		container.MustNamedResolve(con, &in, c.Input)
