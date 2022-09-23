@@ -31,13 +31,13 @@ func main() {
 	}
 
 	err := con.Call(func(c config.Config) error {
+		log.Printf("initialising the %s to %s plugins. range: %s - %s", c.Input, c.Output,
+			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
+
 		var in input.Fetcher
 		var out output.Flusher
 		container.MustNamedResolve(con, &in, c.Input)
 		container.MustNamedResolve(con, &out, c.Output)
-
-		log.Printf("%s to %s; %d hour(s) %s - %s", c.Input, c.Output, c.Hours,
-			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
 
 		timeline, err := in.Fetch()
 		if err != nil {
