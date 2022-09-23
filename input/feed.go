@@ -18,14 +18,14 @@ type Feed struct {
 	client *sling.Sling
 }
 
-func FeedFetcher(c config.Config) Fetcher {
+func FeedFetcher(c config.Config) (Fetcher, error) {
 	return &Feed{
 		since: c.Since,
 		tz:    c.TimeZone,
 		client: sling.New().
 			Base("https://theoldreader.com/").
 			Set("Authorization", "GoogleLogin auth="+c.TheOldReaderToken),
-	}
+	}, nil
 }
 
 type SearchQuery struct {

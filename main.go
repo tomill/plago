@@ -14,12 +14,12 @@ func main() {
 	con := container.New()
 	container.MustSingleton(con, config.GetOptions)
 
-	for name, fn := range map[string]func(config.Config) input.Fetcher{
-		"dummy":   input.DummyFetcher,
-		"rtm":     input.RtmFetcher,
-		"feed":    input.FeedFetcher,
-		"twitter": input.TwitterFetcher,
-		"slack":   input.SlackFetcher,
+	for name, fn := range map[string]func(config.Config) (input.Fetcher, error){
+		//"dummy":   input.DummyFetcher,
+		//"rtm":     input.RtmFetcher,
+		//"feed":    input.FeedFetcher,
+		//"twitter": input.TwitterFetcher,
+		"slack": input.SlackFetcher,
 	} {
 		container.MustNamedTransientLazy(con, name, fn)
 	}

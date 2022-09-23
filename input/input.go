@@ -15,7 +15,7 @@ type Dummy struct {
 	Timeline message.Timeline
 }
 
-func DummyFetcher(config.Config) Fetcher {
+func DummyFetcher(config.Config) (Fetcher, error) {
 	var ts = time.Date(2022, 9, 1, 12, 02, 0, 0, time.FixedZone("Asia/Tokyo", 9*60*60))
 	return &Dummy{
 		Timeline: message.Timeline{
@@ -75,7 +75,7 @@ func DummyFetcher(config.Config) Fetcher {
 				},
 			},
 		},
-	}
+	}, nil
 }
 
 func (p Dummy) Fetch() (message.Timeline, error) {
