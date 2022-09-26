@@ -44,7 +44,7 @@ func (p Feed) Fetch() (message.Timeline, error) {
 			Numbers:      1000,
 		})
 		if err := p.call(req, &searchResponse); err != nil {
-			return timeline, err
+			return timeline, fmt.Errorf("theoldreader get unread items error: %w", err)
 		}
 	}
 
@@ -53,7 +53,7 @@ func (p Feed) Fetch() (message.Timeline, error) {
 		req := p.client.New().Post("reader/api/0/stream/items/contents?output=json").
 			BodyForm(searchResponse.AsContentsQuery())
 		if err := p.call(req, &contentsResponse); err != nil {
-			return timeline, err
+			return timeline, fmt.Errorf("theoldreader get item contents error: %w", err)
 		}
 	}
 
@@ -79,7 +79,7 @@ func (p Feed) Fetch() (message.Timeline, error) {
 		query.Action = "user/-/state/com.google/read"
 		req := p.client.New().Post("reader/api/0/edit-tag").BodyForm(query)
 		if err := p.call(req, nil); err != nil {
-			return timeline, err
+			return timeline, fmt.Errorf("theoldreader mark as read error: %w", err)
 		}
 	}
 
@@ -138,7 +138,7 @@ func (p Feed) call(req *sling.Sling, v interface{}) error {
 	}
 
 	if err != nil {
-		return err
+		return fmt.Errorf("theoldreader http call error: %w", err)
 	} else if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("request error: %s - %s", res.Request.URL.Path, res.Status)
 	}

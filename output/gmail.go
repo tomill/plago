@@ -49,7 +49,7 @@ func (p Gmail) Flush(timeline message.Timeline) error {
 		smtp.PlainAuth("", p.account+"@gmail.com", p.appPassword, "smtp.gmail.com"),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("mail send error error: %w", err)
 	}
 
 	return nil

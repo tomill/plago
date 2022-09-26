@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"runtime/debug"
 	"time"
@@ -13,6 +12,12 @@ import (
 )
 
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Fatalf("[ERROR] panic: %s\n%s", err, debug.Stack())
+		}
+	}()
+
 	con := container.New()
 	container.MustSingleton(con, config.GetOptions)
 
@@ -32,7 +37,7 @@ func main() {
 		container.MustNamedTransientLazy(con, name, fn)
 	}
 
-	err := con.Call(func(c config.Config) error {
+	container.MustCall(con, func(c config.Config) error {
 		log.Printf("initialising the %s to %s plugins. range: %s - %s", c.Input, c.Output,
 			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
 
@@ -53,15 +58,4 @@ func main() {
 
 		return out.Flush(timeline)
 	})
-
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Printf("panic: %v\n%s", err, debug.Stack())
-			log.Fatal("[ERROR]", err)
-		}
-	}()
-
-	if err != nil {
-		log.Fatal("[ERROR]", err)
-	}
 }
