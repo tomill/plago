@@ -72,7 +72,6 @@ func (p Feed) Fetch() (message.Timeline, error) {
 
 		timeline.Append(msg)
 	}
-	timeline.Sort()
 
 	if len(timeline.Messages) > 0 {
 		query := searchResponse.AsContentsQuery()
@@ -83,7 +82,7 @@ func (p Feed) Fetch() (message.Timeline, error) {
 		}
 	}
 
-	return timeline, nil
+	return timeline.Sorted(), nil
 }
 
 type SearchQuery struct {
