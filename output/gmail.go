@@ -83,7 +83,7 @@ li img {
 }
 
 li blockquote {
-  color: gray;
+  color: silver;
   border-left: 2px solid silver;
   margin: 3px 0 0 0;
   padding: 1px 10px;
@@ -103,11 +103,11 @@ li blockquote {
 <ul>{{ $started = true }}
 {{- end }}
 
-  <li>{{ if .URL }}<a href="{{ .URL }}">{{ .UserName }}</a>&nbsp;{{ end }}
+  <li>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .Lead }}</a>&nbsp;{{ end }}
     {{ .Text | compact | chomp | nl2br }}
   {{- with .Attachments }}<br>
     {{ range . }}
-      {{- if eq .Type "image" }}<img src="{{ .URL }}">
+      {{- if eq .Type "image" }}<img src="{{ .Permalink }}">
       {{- else }}
     <blockquote>{{ .Text | compact | chomp | nl2br }}</blockquote>{{ end }}
     {{- end }}

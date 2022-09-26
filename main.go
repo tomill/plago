@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"runtime/debug"
 	"time"
 
 	"github.com/golobby/container/v3"
@@ -51,7 +53,15 @@ func main() {
 
 		return out.Flush(timeline)
 	})
+
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Printf("panic: %v\n%s", err, debug.Stack())
+			log.Fatal("[ERROR]", err)
+		}
+	}()
+
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("[ERROR]", err)
 	}
 }

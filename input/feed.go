@@ -59,8 +59,8 @@ func (p Feed) Fetch() (message.Timeline, error) {
 
 	for _, item := range contentsResponse.Items {
 		msg := message.Message{
-			URL:       item.Canonical[0].Href,
-			UserName:  item.Origin.Title,
+			Permalink: item.Canonical[0].Href,
+			Lead:      item.Origin.Title,
 			Text:      item.Title,
 			Timestamp: time.Unix(item.Published, 0),
 		}

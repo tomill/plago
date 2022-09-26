@@ -24,34 +24,34 @@ func DummyFetcher(config.Config) (Fetcher, error) {
 			Messages: []message.Message{
 				{
 					Timestamp: ts,
-					URL:       "https://example.com/1",
-					UserName:  "user1",
+					Permalink: "https://example.com/1",
+					Lead:      "user1",
 					Text:      "あああああああ改行\nあああああ",
 				},
 				{
 					Section:   "main",
-					URL:       "https://example.com/2",
+					Permalink: "https://example.com/2",
 					Timestamp: ts.Add(2 * time.Minute),
-					UserName:  "user2",
+					Lead:      "user2",
 					Text:      "いいいいいいい<script>いいいいいいいいいいいいいい",
 				},
 				{
 					Section:   "sub",
-					URL:       "https://example.com/3",
+					Permalink: "https://example.com/3",
 					Timestamp: ts.Add(1 * time.Minute),
-					UserName:  "user3",
+					Lead:      "user3",
 					Text:      "えええええ",
 					Attachments: []message.Message{
 						{
-							Type: "image",
-							URL:  "https://www.gravatar.com/avatar/f5d789b9076fd42eaabee3b2941b74db?s=50",
+							Type:      message.TypeImage,
+							Permalink: "https://www.gravatar.com/avatar/f5d789b9076fd42eaabee3b2941b74db?s=50",
 						},
 						{
-							Type: "image",
-							URL:  "https://www.gravatar.com/avatar/f5d789b9076fd42eaabee3b2941b74db?s=50",
+							Type:      message.TypeImage,
+							Permalink: "https://www.gravatar.com/avatar/f5d789b9076fd42eaabee3b2941b74db?s=50",
 						},
 						{
-							Type: "text",
+							Type: message.TypeText,
 							Text: "引用\n引用",
 						},
 					},
@@ -63,8 +63,8 @@ func DummyFetcher(config.Config) (Fetcher, error) {
 				},
 				{
 					Section:   "main",
-					URL:       "https://example.com/3",
-					UserName:  "user2",
+					Permalink: "https://example.com/3",
+					Lead:      "user2",
 					Timestamp: ts.Add(3 * time.Minute),
 					Text:      "ううう",
 					Attachments: []message.Message{
