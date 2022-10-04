@@ -109,7 +109,7 @@ li blockquote {
     {{ range . }}
       {{- if eq .Type "image" }}<img src="{{ .Permalink }}">
       {{- else }}
-    <blockquote>{{ .Text | compact | chomp | nl2br }}</blockquote>{{ end }}
+    <blockquote>{{ .Text | compact | max 800 | chomp | nl2br }}</blockquote>{{ end }}
     {{- end }}
   {{- end }}</li>
 
@@ -125,16 +125,23 @@ li blockquote {
 		"compact": func(text string) string {
 			return strings.ReplaceAll(text, "\n\n", "\n")
 		},
+		"nl2br": func(text string) template.HTML {
+			text = html.UnescapeString(text)
+			return template.HTML(strings.ReplaceAll(template.HTMLEscapeString(text), "\n", "<br>\n"))
+		},
+		"max": func(max int, text string) string {
+			if s := []rune(text); len(s) > max {
+				return string(s[:max]) + "..."
+			} else {
+				return text
+			}
+		},
 		"quoted": func(mark string, text string) string {
 			if text != "" {
 				text = mark + text
 			}
 
 			return strings.ReplaceAll(text, "\n", "  \n"+mark)
-		},
-		"nl2br": func(text string) template.HTML {
-			text = html.UnescapeString(text)
-			return template.HTML(strings.ReplaceAll(template.HTMLEscapeString(text), "\n", "<br>\n"))
 		},
 	}).Parse(body)
 	if err != nil {
