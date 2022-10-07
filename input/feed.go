@@ -62,7 +62,6 @@ func (p Feed) Fetch() (message.Timeline, error) {
 			Permalink: item.Canonical[0].Href,
 			Lead:      item.Origin.Title,
 			Text:      item.Title,
-			Timestamp: time.Unix(item.Published, 0),
 		}
 		for _, tag := range item.Categories {
 			if strings.HasPrefix(tag, "user/-/label/") {
