@@ -32,7 +32,7 @@ func DummyFetcher(config.Config) (Fetcher, error) {
 					Section:   "main",
 					Permalink: "https://example.com/2",
 					Timestamp: ts.Add(2 * time.Minute),
-					Lead:      "user2",
+					Lead:      "user3",
 					Text:      "いいいいいいい<script>いいいいいいいいいいいいいい",
 				},
 				{
