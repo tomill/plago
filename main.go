@@ -51,7 +51,7 @@ func main() {
 			return err
 		}
 
-		log.Printf("fetched data from %s %d line(s). flush to %s...", c.Input, len(timeline.Messages), c.Output)
+		log.Printf("fetched data from %s %d line(s). flush to %s ...", c.Input, len(timeline.Messages), c.Output)
 		if len(timeline.Messages) == 0 {
 			return nil
 		}
