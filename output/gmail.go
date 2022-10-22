@@ -16,6 +16,8 @@ import (
 	"github.com/tomill/centre/message"
 )
 
+var GmailDomain = "gmail.com"
+
 type Gmail struct {
 	account     string
 	appPassword string
@@ -34,7 +36,7 @@ func (p Gmail) Flush(timeline message.Timeline) error {
 		return err
 	}
 
-	addr := fmt.Sprintf("%s+%s@gmail.com", p.account, timeline.Source)
+	addr := fmt.Sprintf("%s+%s@%s", p.account, timeline.Source, GmailDomain)
 	msg := &email.Email{
 		To:   []string{addr},
 		From: fmt.Sprintf("%s <%s>", timeline.Source, addr),
@@ -47,7 +49,7 @@ func (p Gmail) Flush(timeline message.Timeline) error {
 
 	err = msg.Send(
 		"smtp.gmail.com:587",
-		smtp.PlainAuth("", p.account+"@gmail.com", p.appPassword, "smtp.gmail.com"),
+		smtp.PlainAuth("", p.account+"@"+GmailDomain, p.appPassword, "smtp.gmail.com"),
 	)
 	if err != nil {
 		return fmt.Errorf("mail send error error: %w", err)
