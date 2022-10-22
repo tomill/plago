@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/smtp"
 	"net/textproto"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -123,7 +124,7 @@ li blockquote {
 			})
 		},
 		"compact": func(text string) string {
-			return strings.ReplaceAll(text, "\n\n", "\n")
+			return regexp.MustCompile(`\s*\n\s*\n`).ReplaceAllString(text, "\n")
 		},
 		"nl2br": func(text string) template.HTML {
 			text = html.UnescapeString(text)
