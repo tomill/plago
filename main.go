@@ -27,6 +27,7 @@ func main() {
 		"feed":    input.FeedFetcher,
 		"twitter": input.TwitterFetcher,
 		"slack":   input.SlackFetcher,
+		"discord": input.DiscordFetcher,
 	} {
 		container.MustNamedTransientLazy(con, name, fn)
 	}
