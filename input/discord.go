@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dghubble/sling"
@@ -57,6 +58,10 @@ type DiscordMessage struct {
 	Attachments []struct {
 		Filename string `json:"filename"`
 	} `json:"attachments"`
+	Mentions []struct {
+		ID       string `json:"id"`
+		UserName string `json:"username"`
+	} `json:"mentions"`
 }
 
 func (p Discord) Fetch() (message.Timeline, error) {
@@ -75,7 +80,7 @@ func (p Discord) Fetch() (message.Timeline, error) {
 		ch := v.(DiscordChannel)
 
 		var messages []DiscordMessage
-		if res, err := p.client.New().Get("api/v9/channels/" + ch.ChannelID + "/messages??limit=50").ReceiveSuccess(&messages); err != nil {
+		if res, err := p.client.New().Get("api/v9/channels/" + ch.ChannelID + "/messages?limit=50").ReceiveSuccess(&messages); err != nil {
 			return timeline, fmt.Errorf("discord web api call error: %w", err)
 		} else if res.StatusCode != http.StatusOK {
 			return timeline, fmt.Errorf("request error: %s - %s", res.Request.URL.Path, res.Status)
@@ -93,6 +98,10 @@ func (p Discord) Fetch() (message.Timeline, error) {
 				Lead:      m.Timestamp.In(p.tz).Format("15:04"),
 				Text:      m.Author.UserName + ": " + m.Content,
 			}
+			for _, v := range m.Mentions {
+				msg.Text = strings.ReplaceAll(msg.Text, fmt.Sprintf("<@%s>", "@"+v.ID), v.UserName)
+			}
+
 			for _, v := range m.Attachments {
 				msg.Attachments = append(msg.Attachments, message.Message{
 					Text: v.Filename,
