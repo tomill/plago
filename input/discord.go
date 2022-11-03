@@ -13,6 +13,7 @@ import (
 
 type Discord struct {
 	since  time.Time
+	until  time.Time
 	tz     *time.Location
 	client *sling.Sling
 	sheet  *config.Sheet
@@ -28,6 +29,7 @@ type DiscordChannel struct {
 func DiscordFetcher(c config.Config) (Fetcher, error) {
 	p := &Discord{
 		since: c.Since,
+		until: c.Until,
 		tz:    c.TimeZone,
 		client: sling.New().
 			Base("https://discord.com/").
@@ -80,7 +82,7 @@ func (p Discord) Fetch() (message.Timeline, error) {
 		}
 
 		for _, m := range messages {
-			if m.Timestamp.Before(p.since) {
+			if m.Timestamp.Before(p.since) || m.Timestamp.After(p.until) {
 				continue
 			}
 
@@ -88,8 +90,8 @@ func (p Discord) Fetch() (message.Timeline, error) {
 				Section:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
 				Timestamp: m.Timestamp,
 				Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, m.ChannelID, m.ID),
-				Lead:      m.Author.UserName,
-				Text:      m.Content,
+				Lead:      m.Timestamp.In(p.tz).Format("15:04"),
+				Text:      m.Author.UserName + ": " + m.Content,
 			}
 			for _, v := range m.Attachments {
 				msg.Attachments = append(msg.Attachments, message.Message{
