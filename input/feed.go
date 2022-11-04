@@ -84,6 +84,8 @@ func (p Feed) Fetch() (message.Timeline, error) {
 	return timeline.Sorted(), nil
 }
 
+// TODO ns
+
 type SearchQuery struct {
 	Subscription string `url:"s,omitempty"`
 	Exclude      string `url:"xt,omitempty"`

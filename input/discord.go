@@ -38,6 +38,7 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 			Set("UserAgent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"),
 	}
 
+	// TODO move to main
 	sheet, err := config.NewSheet(c.SheetServiceAccountKey, c.SheetID)
 	if err != nil {
 		return nil, err
@@ -56,7 +57,9 @@ type DiscordMessage struct {
 		UserName string `json:"username"`
 	} `json:"author"`
 	Attachments []struct {
-		Filename string `json:"filename"`
+		Filename    string `json:"filename"`
+		URL         string `json:"url"`
+		ContentType string `json:"content_type"`
 	} `json:"attachments"`
 	Mentions []struct {
 		ID       string `json:"id"`
@@ -76,6 +79,7 @@ func (p Discord) Fetch() (message.Timeline, error) {
 		return timeline, err
 	}
 
+	// TODO style
 	for _, v := range channels {
 		ch := v.(DiscordChannel)
 
@@ -103,9 +107,16 @@ func (p Discord) Fetch() (message.Timeline, error) {
 			}
 
 			for _, v := range m.Attachments {
-				msg.Attachments = append(msg.Attachments, message.Message{
-					Text: v.Filename,
-				})
+				if strings.HasPrefix(v.ContentType, "image/") {
+					msg.Attachments = append(msg.Attachments, message.Message{
+						Type:      message.TypeImage,
+						Permalink: v.URL,
+					})
+				} else {
+					msg.Attachments = append(msg.Attachments, message.Message{
+						Text: v.Filename,
+					})
+				}
 			}
 
 			timeline.Append(msg)
