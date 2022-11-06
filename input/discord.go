@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -79,6 +80,8 @@ func (p Discord) Fetch() (message.Timeline, error) {
 		return timeline, err
 	}
 
+	emoji := regexp.MustCompile(`<(:[^:]+:)\d+>`)
+
 	// TODO style
 	for _, v := range channels {
 		ch := v.(DiscordChannel)
@@ -102,8 +105,10 @@ func (p Discord) Fetch() (message.Timeline, error) {
 				Lead:      m.Timestamp.In(p.tz).Format("15:04"),
 				Text:      m.Author.UserName + ": " + m.Content,
 			}
+			msg.Text = emoji.ReplaceAllString(msg.Text, `$1`)
+			
 			for _, v := range m.Mentions {
-				msg.Text = strings.ReplaceAll(msg.Text, fmt.Sprintf("<@%s>", "@"+v.ID), v.UserName)
+				msg.Text = strings.ReplaceAll(msg.Text, fmt.Sprintf("<@%s>", v.ID), "@"+v.UserName)
 			}
 
 			for _, v := range m.Attachments {
