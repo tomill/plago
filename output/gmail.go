@@ -41,7 +41,7 @@ func (p Gmail) Flush(timeline message.Timeline) error {
 		To:   []string{addr},
 		From: fmt.Sprintf("%s <%s>", timeline.Source, addr),
 		Headers: textproto.MIMEHeader{
-			"References": []string{fmt.Sprintf("<%s-%s>", timeline.Subject, addr)},
+			"References": []string{fmt.Sprintf("<%s-%s.centre>", timeline.Subject, timeline.RefID)},
 		},
 		Subject: timeline.Subject,
 		HTML:    []byte(body),
