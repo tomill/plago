@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"runtime/debug"
 	"time"
@@ -12,9 +13,10 @@ import (
 )
 
 func main() {
+	var msg string
 	defer func() {
 		if err := recover(); err != nil {
-			log.Fatalf("[ERROR] panic: %s\n%s", err, debug.Stack())
+			log.Fatalf("[ERROR] panic: %s %s\n%s", msg, err, debug.Stack())
 		}
 	}()
 
@@ -39,8 +41,10 @@ func main() {
 	}
 
 	container.MustCall(con, func(c config.Config) error {
-		log.Printf("initialising the %s to %s plugins. range: %s - %s", c.Input, c.Output,
+		msg = fmt.Sprintf("%s to %s plugins. range: %s - %s", c.Input, c.Output,
 			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
+
+		log.Printf("initialising %s", msg)
 
 		var in input.Fetcher
 		var out output.Flusher
@@ -52,11 +56,12 @@ func main() {
 			return err
 		}
 
-		log.Printf("fetched data from %s %d line(s). flush to %s ...", c.Input, len(timeline.Messages), c.Output)
 		if len(timeline.Messages) == 0 {
+			log.Printf("fetched no data from %s. quit.", c.Input)
 			return nil
 		}
 
+		log.Printf("fetched data from %s %d line(s). flush to %s ...", c.Input, len(timeline.Messages), c.Output)
 		return out.Flush(timeline)
 	})
 }
