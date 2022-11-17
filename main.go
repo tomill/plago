@@ -16,7 +16,7 @@ func main() {
 	var msg string
 	defer func() {
 		if err := recover(); err != nil {
-			log.Fatalf("[ERROR] panic: %s %s\n%s", msg, err, debug.Stack())
+			log.Fatalf("[ERROR] panic: centre %s error: %s\n%s", msg, err, debug.Stack())
 		}
 	}()
 
@@ -41,7 +41,7 @@ func main() {
 	}
 
 	container.MustCall(con, func(c config.Config) error {
-		msg = fmt.Sprintf("%s to %s plugins. range: %s - %s", c.Input, c.Output,
+		msg = fmt.Sprintf("%s to %s range: %s - %s", c.Input, c.Output,
 			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
 
 		log.Printf("initialising %s", msg)
