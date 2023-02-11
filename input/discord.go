@@ -66,6 +66,11 @@ type DiscordMessage struct {
 		ID       string `json:"id"`
 		UserName string `json:"username"`
 	} `json:"mentions"`
+	Reference struct {
+		ChannelID string `json:"channel_id"`
+		GuildID   string `json:"guild_id"`
+		MessageID string `json:"message_id"`
+	} `json:"message_reference"`
 }
 
 func (p Discord) Fetch() (message.Timeline, error) {
@@ -103,8 +108,16 @@ func (p Discord) Fetch() (message.Timeline, error) {
 				Timestamp: m.Timestamp,
 				Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, m.ChannelID, m.ID),
 				Lead:      m.Timestamp.In(p.tz).Format("15:04"),
-				Text:      m.Author.UserName + ": " + m.Content,
+				Text:      m.Content,
 			}
+
+			if m.Reference.MessageID != "" {
+				msg.Text = "» " + msg.Text
+			}
+			if m.Reference.MessageID != "" {
+				msg.Text = m.Author.UserName + ": " + msg.Text
+			}
+
 			msg.Text = emoji.ReplaceAllString(msg.Text, `$1`)
 
 			for _, v := range m.Mentions {
