@@ -114,10 +114,7 @@ func (p Discord) Fetch() (message.Timeline, error) {
 			if m.Reference.MessageID != "" {
 				msg.Text = "» " + msg.Text
 			}
-			if m.Reference.MessageID != "" {
-				msg.Text = m.Author.UserName + ": " + msg.Text
-			}
-
+			msg.Text = m.Author.UserName + ": " + msg.Text
 			msg.Text = emoji.ReplaceAllString(msg.Text, `$1`)
 
 			for _, v := range m.Mentions {
