@@ -106,7 +106,7 @@ li blockquote {
 <ul>{{ $started = true }}
 {{- end }}
 
-  <li>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .Lead }}</a>&nbsp;{{ end }}
+  <li><div>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .Lead }}</a>&nbsp;{{ end }}
     {{ .Text | compact | chomp | nl2br }}
   {{- with .Attachments }}<br>
     {{ range . }}
@@ -114,7 +114,7 @@ li blockquote {
       {{- else }}
     <blockquote>{{ .Text | compact | max 800 | chomp | nl2br }}</blockquote>{{ end }}
     {{- end }}
-  {{- end }}</li>
+  {{- end }}</div></li>
 
 {{- end }}
 </ul>`
