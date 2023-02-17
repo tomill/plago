@@ -86,7 +86,7 @@ li img {
 }
 
 li blockquote {
-  color: gray;
+  color: gray !important;
   border-left: 2px solid silver;
   margin: 3px 0 0 0;
   padding: 1px 10px;
