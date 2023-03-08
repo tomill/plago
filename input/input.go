@@ -28,7 +28,8 @@ func RawFetcher(c config.Config) (Fetcher, error) {
 }
 
 func DummyFetcher(config.Config) (Fetcher, error) {
-	data := `
+	return &Raw{
+		data: `
 {
   "Source": "dummy",
   "Subject": "test",
@@ -89,7 +90,6 @@ func DummyFetcher(config.Config) (Fetcher, error) {
       "Text": "おお"
     }
   ]
-}`
-
-	return &Raw{data: data}, nil
+}`,
+	}, nil
 }
