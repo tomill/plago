@@ -110,7 +110,7 @@ li blockquote {
     {{ .Text | compact | chomp | nl2br }}
   {{- with .Attachments }}<br>
     {{ range . }}
-      {{- if eq .Type "image" }}<img src="{{ .Permalink }}">
+      {{- if eq .Type "image" }}<img src="{{ .Permalink | safe }}">
       {{- else }}
     <blockquote>{{ .Text | compact | max 800 | chomp | nl2br }}</blockquote>{{ end }}
     {{- end }}
@@ -145,6 +145,9 @@ li blockquote {
 			}
 
 			return strings.ReplaceAll(text, "\n", "  \n"+mark)
+		},
+		"safe": func(s string) template.URL {
+			return template.URL(s)
 		},
 	}).Parse(body)
 	if err != nil {
