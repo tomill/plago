@@ -77,21 +77,29 @@ ul {
 
 li {
   margin: 0 0 0.4em;
+  color: #222;
+}
+
+li b {
+  font-weight: normal;
+  color: #000;
 }
 
 li img {
   height: 80px;
   max-width: 200px;
   margin: 5px 10px 0 0;
+  border-radius: 3px;
 }
 
 li blockquote {
   color: gray;
   border-left: 2px solid silver;
   margin: 3px 0 0 0;
-  padding: 1px 10px;
+  padding: 1px .5rem;
 }
 </style>
+
 {{- $started := false }}
 {{- $section := "" }}
 {{- range .Messages }}
@@ -106,56 +114,47 @@ li blockquote {
 <ul>{{ $started = true }}
 {{- end }}
 
-  <li><div>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .Lead }}</a>&nbsp;{{ end }}
-    {{ .Text | compact | chomp | nl2br }}
+  <li><div>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .Timestamp.Format "15:04" }}</a>&nbsp;{{ end }}
+    <b>{{ .UserName }}</b>: {{ if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
   {{- with .Attachments }}<br>
     {{ range . }}
       {{- if eq .Type "image" }}<img src="{{ .Permalink | safe }}">
       {{- else }}
-    <blockquote>{{ .Text | compact | max 800 | chomp | nl2br }}</blockquote>{{ end }}
+    <blockquote>{{ .Text | compact | max 800 | nl2br }}</blockquote>{{ end }}
     {{- end }}
   {{- end }}</div></li>
 
 {{- end }}
 </ul>`
 
-	tmpl, err := template.New("body").Funcs(template.FuncMap{
-		"chomp": func(text string) string {
-			return strings.TrimRightFunc(text, func(c rune) bool {
-				return unicode.IsSpace(c) || c == '\r' || c == '\n'
-			})
-		},
-		"compact": func(text string) string {
-			return regexp.MustCompile(`\s*\n\s*\n`).ReplaceAllString(text, "\n")
-		},
-		"nl2br": func(text string) template.HTML {
-			text = html.UnescapeString(text)
-			return template.HTML(strings.ReplaceAll(template.HTMLEscapeString(text), "\n", "<br>\n"))
-		},
-		"max": func(max int, text string) string {
-			if s := []rune(text); len(s) > max {
-				return string(s[:max]) + "..."
-			} else {
-				return text
-			}
-		},
-		"quoted": func(mark string, text string) string {
-			if text != "" {
-				text = mark + text
-			}
-
-			return strings.ReplaceAll(text, "\n", "  \n"+mark)
-		},
-		"safe": func(s string) template.URL {
-			return template.URL(s)
-		},
-	}).Parse(body)
-	if err != nil {
-		return "", err
-	}
-
 	var buff strings.Builder
-	if err := tmpl.Execute(&buff, timeline); err != nil {
+	err := template.Must(template.New("body").
+		Funcs(template.FuncMap{
+			"compact": func(text string) string {
+				text = regexp.MustCompile(`\s*\n\s*\n`).ReplaceAllString(text, "\n")
+				text = strings.TrimRightFunc(text, func(c rune) bool {
+					return unicode.IsSpace(c) || c == '\r' || c == '\n'
+				})
+				return text
+			},
+			"max": func(max int, text string) string {
+				if s := []rune(text); len(s) > max {
+					return string(s[:max]) + "..."
+				} else {
+					return text
+				}
+			},
+			"nl2br": func(text string) template.HTML {
+				text = html.UnescapeString(text)
+				return template.HTML(strings.ReplaceAll(template.HTMLEscapeString(text), "\n", "<br>\n"))
+			},
+			"safe": func(s string) template.URL {
+				return template.URL(s)
+			},
+		}).
+		Parse(body)).
+		Execute(&buff, timeline)
+	if err != nil {
 		return "", err
 	}
 
