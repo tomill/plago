@@ -2,7 +2,6 @@ package input
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -14,11 +13,11 @@ import (
 )
 
 type Discord struct {
-	since  time.Time
-	until  time.Time
-	tz     *time.Location
-	client *sling.Sling
-	sheet  *config.Sheet
+	since    time.Time
+	until    time.Time
+	tz       *time.Location
+	client   *sling.Sling
+	channels []DiscordChannel
 }
 
 func DiscordFetcher(c config.Config) (Fetcher, error) {
@@ -32,12 +31,13 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 			Set("UserAgent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"),
 	}
 
-	// TODO move to main
-	sheet, err := config.NewSheet(c.SheetServiceAccountKey, c.SheetID)
+	res, err := c.Sheet().GetLists("discord.channels", DiscordChannel{})
 	if err != nil {
 		return nil, err
 	}
-	p.sheet = sheet
+	for _, v := range res {
+		p.channels = append(p.channels, v.(DiscordChannel))
+	}
 
 	return p, nil
 }
@@ -79,15 +79,7 @@ func (p Discord) Fetch() (message.Timeline, error) {
 		Subject: p.since.Format(time.DateOnly),
 	}
 
-	log.Println("get channel setting from sheet ...")
-	channels, err := p.sheet.GetLists("discord.channels", DiscordChannel{})
-	if err != nil {
-		return timeline, err
-	}
-
-	for _, v := range channels {
-		ch := v.(DiscordChannel)
-
+	for _, ch := range p.channels {
 		var messages []DiscordMessage
 		if res, err := p.client.New().Get("api/v9/channels/" + ch.ChannelID + "/messages?limit=50").ReceiveSuccess(&messages); err != nil {
 			return timeline, fmt.Errorf("discord web api call error: %w", err)
