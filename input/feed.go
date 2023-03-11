@@ -14,14 +14,12 @@ import (
 // Feed https://github.com/theoldreader/api
 type Feed struct {
 	since  time.Time
-	tz     *time.Location
 	client *sling.Sling
 }
 
 func FeedFetcher(c config.Config) (Fetcher, error) {
 	p := &Feed{
 		since: c.Since,
-		tz:    c.TimeZone,
 		client: sling.New().
 			Base("https://theoldreader.com/").
 			Set("Authorization", "GoogleLogin auth="+c.TheOldReaderToken),

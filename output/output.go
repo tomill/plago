@@ -23,9 +23,6 @@ func DumpFlusher(c config.Config) Flusher {
 	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "  ")
 
-	fmt.Println("\n// config")
-	_ = enc.Encode(c)
-
 	if c.RawData != "" {
 		var d message.Timeline
 		_ = json.NewDecoder(strings.NewReader(c.RawData)).Decode(&d)

@@ -15,7 +15,6 @@ import (
 type Discord struct {
 	since    time.Time
 	until    time.Time
-	tz       *time.Location
 	client   *sling.Sling
 	channels []DiscordChannel
 }
@@ -24,7 +23,6 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 	p := &Discord{
 		since: c.Since,
 		until: c.Until,
-		tz:    c.TimeZone,
 		client: sling.New().
 			Base("https://discord.com/").
 			Set("Authorization", c.DiscordToken).
@@ -96,7 +94,7 @@ func (p Discord) Fetch() (message.Timeline, error) {
 				Section:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
 				Timestamp: m.Timestamp,
 				Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, m.ChannelID, m.ID),
-				Lead:      m.Timestamp.In(p.tz).Format("15:04"),
+				Lead:      m.Timestamp.In(tz).Format("15:04"),
 				UserName:  m.Author.UserName,
 				Text:      m.Content,
 				Reply:     m.Reference.MessageID != "",
@@ -110,12 +108,12 @@ func (p Discord) Fetch() (message.Timeline, error) {
 
 			for _, v := range m.Attachments {
 				if strings.HasPrefix(v.ContentType, "image/") {
-					msg.Attachments = append(msg.Attachments, message.Message{
+					msg.AddAttachment(message.Message{
 						Type:      message.TypeImage,
 						Permalink: v.URL,
 					})
 				} else {
-					msg.Attachments = append(msg.Attachments, message.Message{
+					msg.AddAttachment(message.Message{
 						Text: v.Filename,
 					})
 				}
@@ -154,12 +152,12 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 
 	for _, v := range post.Attachments {
 		if strings.HasPrefix(v.ContentType, "image/") {
-			msg.Attachments = append(msg.Attachments, message.Message{
+			msg.AddAttachment(message.Message{
 				Type:      message.TypeImage,
 				Permalink: v.URL,
 			})
 		} else {
-			msg.Attachments = append(msg.Attachments, message.Message{
+			msg.AddAttachment(message.Message{
 				Text: v.Filename,
 			})
 		}
