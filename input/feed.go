@@ -125,7 +125,7 @@ func (res feedItems) AsContentsQuery() struct {
 	}
 }
 
-func (p Feed) call(req *sling.Sling, v interface{}) error {
+func (p Feed) call(req *sling.Sling, v any) error {
 	var res *http.Response
 	var err error
 	if v == nil {
