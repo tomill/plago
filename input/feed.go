@@ -33,25 +33,43 @@ func FeedFetcher(c config.Config) (Fetcher, error) {
 func (p Feed) Fetch() (message.Timeline, error) {
 	timeline := message.Timeline{
 		Source:  "feed",
-		Subject: p.since.Format("2006-01-02"),
+		Subject: p.since.Format(time.DateOnly),
 	}
 
-	var searchResponse SearchResponse
+	var list feedItems
 	{
-		req := p.client.New().Get("reader/api/0/stream/items/ids?output=json").QueryStruct(SearchQuery{
+		query := struct {
+			Subscription string `url:"s,omitempty"`
+			Exclude      string `url:"xt,omitempty"`
+			Numbers      int    `url:"n,omitempty"`
+		}{
 			Subscription: "user/-/state/com.google/reading-list",
 			Exclude:      "user/-/state/com.google/read",
 			Numbers:      1000,
-		})
-		if err := p.call(req, &searchResponse); err != nil {
+		}
+
+		req := p.client.New().Get("reader/api/0/stream/items/ids?output=json").QueryStruct(query)
+		if err := p.call(req, &list); err != nil {
 			return timeline, fmt.Errorf("theoldreader get unread items error: %w", err)
 		}
 	}
 
-	var contentsResponse ContentsResponse
+	var contentsResponse struct {
+		Items []struct {
+			Title      string   `json:"title"`
+			Published  int64    `json:"published"`
+			Categories []string `json:"categories"`
+			Canonical  []struct {
+				Href string `json:"href"`
+			} `json:"canonical"`
+			Origin struct {
+				Title string `json:"title"`
+				URL   string `json:"htmlUrl"`
+			} `json:"origin"`
+		} `json:"items"`
+	}
 	{
-		req := p.client.New().Post("reader/api/0/stream/items/contents?output=json").
-			BodyForm(searchResponse.AsContentsQuery())
+		req := p.client.New().Post("reader/api/0/stream/items/contents?output=json").BodyForm(list.AsContentsQuery())
 		if err := p.call(req, &contentsResponse); err != nil {
 			return timeline, fmt.Errorf("theoldreader get item contents error: %w", err)
 		}
@@ -73,7 +91,7 @@ func (p Feed) Fetch() (message.Timeline, error) {
 	}
 
 	if len(timeline.Messages) > 0 {
-		query := searchResponse.AsContentsQuery()
+		query := list.AsContentsQuery()
 		query.Action = "user/-/state/com.google/read"
 		req := p.client.New().Post("reader/api/0/edit-tag").BodyForm(query)
 		if err := p.call(req, nil); err != nil {
@@ -84,47 +102,27 @@ func (p Feed) Fetch() (message.Timeline, error) {
 	return timeline.Sorted(), nil
 }
 
-// TODO ns
-
-type SearchQuery struct {
-	Subscription string `url:"s,omitempty"`
-	Exclude      string `url:"xt,omitempty"`
-	Numbers      int    `url:"n,omitempty"`
-}
-
-type SearchResponse struct {
+type feedItems struct {
 	ItemRefs []struct {
 		Id string `json:"id"`
 	} `json:"itemRefs"`
 }
 
-func (res SearchResponse) AsContentsQuery() ContentsQuery {
+func (res feedItems) AsContentsQuery() struct {
+	Action string   `url:"a,omitempty"`
+	Ids    []string `url:"i,omitempty"`
+} {
 	var ids []string
 	for _, id := range res.ItemRefs {
 		ids = append(ids, "tag:google.com,2005:reader/item/"+id.Id)
 	}
 
-	return ContentsQuery{Ids: ids}
-}
-
-type ContentsQuery struct {
-	Action string   `url:"a,omitempty"`
-	Ids    []string `url:"i,omitempty"`
-}
-
-type ContentsResponse struct {
-	Items []struct {
-		Title      string   `json:"title"`
-		Published  int64    `json:"published"`
-		Categories []string `json:"categories"`
-		Canonical  []struct {
-			Href string `json:"href"`
-		} `json:"canonical"`
-		Origin struct {
-			Title string `json:"title"`
-			URL   string `json:"htmlUrl"`
-		} `json:"origin"`
-	} `json:"items"`
+	return struct {
+		Action string   `url:"a,omitempty"`
+		Ids    []string `url:"i,omitempty"`
+	}{
+		Ids: ids,
+	}
 }
 
 func (p Feed) call(req *sling.Sling, v interface{}) error {

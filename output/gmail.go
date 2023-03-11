@@ -114,8 +114,8 @@ li blockquote {
 <ul>{{ $started = true }}
 {{- end }}
 
-  <li><div>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .Timestamp.Format "15:04" }}</a>&nbsp;{{ end }}
-    <b>{{ .UserName }}</b>: {{ if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
+  <li><div>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .Lead }}</a>&nbsp;{{ else if .Lead }}{{ .Lead }}&nbsp;{{ end }}
+    {{ if .UserName }}<b>{{ .UserName }}</b>: {{ end }}{{ if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
   {{- with .Attachments }}<br>
     {{ range . }}
       {{- if eq .Type "image" }}<img src="{{ .Permalink | safe }}">

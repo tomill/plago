@@ -21,13 +21,6 @@ type Discord struct {
 	sheet  *config.Sheet
 }
 
-type DiscordChannel struct {
-	ServerID    string
-	ServerName  string
-	ChannelID   string
-	ChannelName string
-}
-
 func DiscordFetcher(c config.Config) (Fetcher, error) {
 	p := &Discord{
 		since: c.Since,
@@ -47,6 +40,13 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 	p.sheet = sheet
 
 	return p, nil
+}
+
+type DiscordChannel struct {
+	ServerID    string
+	ServerName  string
+	ChannelID   string
+	ChannelName string
 }
 
 type DiscordMessage struct {
@@ -76,7 +76,7 @@ type DiscordMessage struct {
 func (p Discord) Fetch() (message.Timeline, error) {
 	timeline := message.Timeline{
 		Source:  "discord",
-		Subject: p.since.Format("2006-01-02"),
+		Subject: p.since.Format(time.DateOnly),
 	}
 
 	log.Println("get channel setting from sheet ...")
@@ -85,9 +85,6 @@ func (p Discord) Fetch() (message.Timeline, error) {
 		return timeline, err
 	}
 
-	emoji := regexp.MustCompile(`<(:[^:]+:)\d+>`)
-
-	// TODO style
 	for _, v := range channels {
 		ch := v.(DiscordChannel)
 
@@ -108,13 +105,11 @@ func (p Discord) Fetch() (message.Timeline, error) {
 				Timestamp: m.Timestamp,
 				Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, m.ChannelID, m.ID),
 				Lead:      m.Timestamp.In(p.tz).Format("15:04"),
+				UserName:  m.Author.UserName,
 				Text:      m.Content,
+				Reply:     m.Reference.MessageID != "",
 			}
 
-			if m.Reference.MessageID != "" {
-				msg.Text = "» " + msg.Text
-			}
-			msg.Text = m.Author.UserName + ": " + msg.Text
 			msg.Text = emoji.ReplaceAllString(msg.Text, `$1`)
 
 			for _, v := range m.Mentions {
@@ -139,4 +134,44 @@ func (p Discord) Fetch() (message.Timeline, error) {
 	}
 
 	return timeline.Sorted(), nil
+}
+
+var (
+	emoji = regexp.MustCompile(`<(:[^:]+:)\d+>`)
+)
+
+func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message {
+	if post.Timestamp.Before(p.since) || post.Timestamp.After(p.until) {
+		return nil
+	}
+
+	msg := &message.Message{
+		Section:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
+		Timestamp: post.Timestamp,
+		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
+		UserName:  post.Author.UserName,
+		Text:      post.Content,
+		Reply:     post.Reference.MessageID != "",
+	}
+
+	msg.Text = emoji.ReplaceAllString(msg.Text, "$1")
+
+	for _, v := range post.Mentions {
+		msg.Text = strings.ReplaceAll(msg.Text, fmt.Sprintf("<@%s>", v.ID), "@"+v.UserName)
+	}
+
+	for _, v := range post.Attachments {
+		if strings.HasPrefix(v.ContentType, "image/") {
+			msg.Attachments = append(msg.Attachments, message.Message{
+				Type:      message.TypeImage,
+				Permalink: v.URL,
+			})
+		} else {
+			msg.Attachments = append(msg.Attachments, message.Message{
+				Text: v.Filename,
+			})
+		}
+	}
+
+	return msg
 }

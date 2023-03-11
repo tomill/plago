@@ -33,27 +33,30 @@ func DummyFetcher(config.Config) (Fetcher, error) {
 {
   "Source": "dummy",
   "Subject": "test",
-  "RefID": "",
   "Messages": [
     {
       "Permalink": "https://example.com/1",
       "Timestamp": "2022-09-01T12:02:00+09:00",
-      "Lead": "user1",
+      "Lead": "12:02",
+      "UserName": "user1",
       "Text": "あああああああ改行\nあああああ"
     },
     {
       "Section": "main",
       "Permalink": "https://example.com/2",
       "Timestamp": "2022-09-01T12:04:00+09:00",
-      "Lead": "user3",
+      "Lead": "12:04",
+      "UserName": "user3",
       "Text": "いいいいいいい<script>いいいいいいいいいいいいいい"
     },
     {
       "Section": "main",
       "Permalink": "https://example.com/3",
       "Timestamp": "2022-09-01T12:05:00+09:00",
-      "Lead": "user2",
+      "Lead": "12:05",
+      "UserName": "user2",
       "Text": "ううう",
+      "Reply": true,
       "Attachments": [
         {
           "Timestamp": "0001-01-01T00:00:00Z",
@@ -65,7 +68,8 @@ func DummyFetcher(config.Config) (Fetcher, error) {
       "Section": "sub",
       "Permalink": "https://example.com/3",
       "Timestamp": "2022-09-01T12:03:00+09:00",
-      "Lead": "user3",
+      "Lead": "12:03",
+      "UserName": "user3",
       "Text": "えええええ",
       "Attachments": [
         {
@@ -87,6 +91,7 @@ func DummyFetcher(config.Config) (Fetcher, error) {
     {
       "Section": "sub",
       "Timestamp": "2022-09-01T12:05:00+09:00",
+      "Lead": "12:05",
       "Text": "おお"
     }
   ]
