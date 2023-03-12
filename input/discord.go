@@ -85,41 +85,10 @@ func (p Discord) Fetch() (message.Timeline, error) {
 			return timeline, fmt.Errorf("request error: %s - %s", res.Request.URL.Path, res.Status)
 		}
 
-		for _, m := range messages {
-			if m.Timestamp.Before(p.since) || m.Timestamp.After(p.until) {
-				continue
+		for _, v := range messages {
+			if msg := p.build(ch, v); msg != nil {
+				timeline.Append(*msg)
 			}
-
-			msg := message.Message{
-				Section:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
-				Timestamp: m.Timestamp,
-				Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, m.ChannelID, m.ID),
-				Lead:      m.Timestamp.In(tz).Format("15:04"),
-				UserName:  m.Author.UserName,
-				Text:      m.Content,
-				Reply:     m.Reference.MessageID != "",
-			}
-
-			msg.Text = emoji.ReplaceAllString(msg.Text, `$1`)
-
-			for _, v := range m.Mentions {
-				msg.Text = strings.ReplaceAll(msg.Text, fmt.Sprintf("<@%s>", v.ID), "@"+v.UserName)
-			}
-
-			for _, v := range m.Attachments {
-				if strings.HasPrefix(v.ContentType, "image/") {
-					msg.AddAttachment(message.Message{
-						Type:      message.TypeImage,
-						Permalink: v.URL,
-					})
-				} else {
-					msg.AddAttachment(message.Message{
-						Text: v.Filename,
-					})
-				}
-			}
-
-			timeline.Append(msg)
 		}
 	}
 
@@ -139,12 +108,13 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 		Section:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
 		Timestamp: post.Timestamp,
 		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
+		Lead:      post.Timestamp.In(tz).Format("15:04"),
 		UserName:  post.Author.UserName,
 		Text:      post.Content,
 		Reply:     post.Reference.MessageID != "",
 	}
 
-	msg.Text = emoji.ReplaceAllString(msg.Text, "$1")
+	msg.Text = emoji.ReplaceAllString(msg.Text, `$1`)
 
 	for _, v := range post.Mentions {
 		msg.Text = strings.ReplaceAll(msg.Text, fmt.Sprintf("<@%s>", v.ID), "@"+v.UserName)

@@ -19,7 +19,6 @@ type Raw struct {
 func (p Raw) Fetch() (message.Timeline, error) {
 	var timeline message.Timeline
 	err := json.NewDecoder(strings.NewReader(p.data)).Decode(&timeline)
-
 	return timeline, err
 }
 
