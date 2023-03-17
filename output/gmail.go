@@ -63,36 +63,22 @@ func (p Gmail) html(timeline message.Timeline) (string, error) {
 <style>
 h2 {
   font-size: 1rem;
-  margin: 1rem 0; 
+  color: gray;
 }
 
-p {
-  margin: 0;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-}
-
-li {
+div {
   margin: 0 0 0.4em;
   color: #222;
 }
 
-li b {
-  font-weight: normal;
-  color: #000;
-}
-
-li img {
+div img {
   height: 80px;
   max-width: 200px;
   margin: 5px 10px 0 0;
   border-radius: 3px;
 }
 
-li blockquote {
+div blockquote {
   color: gray;
   border-left: 2px solid silver;
   margin: 3px 0 0 0;
@@ -100,32 +86,31 @@ li blockquote {
 }
 </style>
 
-{{- $started := false }}
 {{- $section := "" }}
+{{- $channel := "" }}
 {{- range .Messages }}
 
-{{- if ne $section .Section }}{{ $section = .Section }}
-{{ if $started }}</ul>{{ end }}
+{{- if ne $section .Section }}{{- $channel = "" }}
+{{ if .Section }}<h2>{{ .Section }}</h2>{{ end }}
+{{ end }}
+{{- $section = .Section }}
 
-<h2>{{ $section }}</h2>
-<ul>{{ $started = true }}
+{{- if ne $channel .Channel }}
+{{ if .Channel }}<h3>{{ .Channel }}</h3>{{ end }}
+{{ end }}
+{{- $channel = .Channel }}
 
-{{- else if not $started }}
-<ul>{{ $started = true }}
+<div>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .UserName }}</a>&nbsp;{{ else if .UserName }}{{ .UserName }}&nbsp;{{ end }}
+{{ if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
+{{- with .Attachments }}<br>
+{{ range . }}
+	{{- if eq .Type "image" }}<img src="{{ .Permalink | safe }}">
+	{{- else }}
+  <blockquote>{{ .Text | compact | max 800 | nl2br }}</blockquote>{{ end }}
 {{- end }}
-
-  <li><div>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .Lead }}</a>&nbsp;{{ else if .Lead }}{{ .Lead }}&nbsp;{{ end }}
-    {{ if .UserName }}<b>{{ .UserName }}</b>: {{ end }}{{ if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
-  {{- with .Attachments }}<br>
-    {{ range . }}
-      {{- if eq .Type "image" }}<img src="{{ .Permalink | safe }}">
-      {{- else }}
-    <blockquote>{{ .Text | compact | max 800 | nl2br }}</blockquote>{{ end }}
-    {{- end }}
-  {{- end }}</div></li>
-
+{{- end }}</div>
 {{- end }}
-</ul>`
+`
 
 	var buff strings.Builder
 	err := template.Must(template.New("body").
