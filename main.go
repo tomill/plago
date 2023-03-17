@@ -43,7 +43,7 @@ func main() {
 	}
 
 	container.MustCall(con, func(c config.Config) error {
-		msg = fmt.Sprintf("%s to %s range: %s - %s", c.Input, c.Output,
+		msg = fmt.Sprintf("--in %s --out %s --since %q --until %q", c.Input, c.Output,
 			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
 
 		log.Printf("initialising %s", msg)
