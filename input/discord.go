@@ -105,10 +105,10 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 	}
 
 	msg := &message.Message{
-		Section:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
 		Timestamp: post.Timestamp,
+		Section:   post.Timestamp.In(tz).Format("2006-01-02 15:00"),
+		Channel:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
 		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
-		Lead:      post.Timestamp.In(tz).Format("15:04"),
 		UserName:  post.Author.UserName,
 		Text:      post.Content,
 		Reply:     post.Reference.MessageID != "",

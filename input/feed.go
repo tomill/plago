@@ -75,13 +75,13 @@ func (p Feed) Fetch() (message.Timeline, error) {
 
 	for _, item := range contentsResponse.Items {
 		msg := message.Message{
+			UserName:  item.Origin.Title,
 			Permalink: item.Canonical[0].Href,
-			Lead:      item.Origin.Title,
 			Text:      item.Title,
 		}
 		for _, tag := range item.Categories {
 			if strings.HasPrefix(tag, "user/-/label/") {
-				msg.Section = strings.Replace(tag, "user/-/label/", "", 1)
+				msg.Channel = strings.Replace(tag, "user/-/label/", "", 1)
 			}
 		}
 
