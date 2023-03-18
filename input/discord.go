@@ -17,12 +17,14 @@ type Discord struct {
 	until    time.Time
 	client   *sling.Sling
 	channels []DiscordChannel
+	users    map[string]string
 }
 
 func DiscordFetcher(c config.Config) (Fetcher, error) {
 	p := &Discord{
 		since: c.Since,
 		until: c.Until,
+		users: map[string]string{},
 		client: sling.New().
 			Base("https://discord.com/").
 			Set("Authorization", c.DiscordToken).
@@ -53,6 +55,7 @@ type DiscordMessage struct {
 	ChannelID string    `json:"channel_id"`
 	Content   string    `json:"content"`
 	Author    struct {
+		ID       string `json:"id"`
 		UserName string `json:"username"`
 	} `json:"author"`
 	Attachments []struct {
@@ -69,6 +72,12 @@ type DiscordMessage struct {
 		GuildID   string `json:"guild_id"`
 		MessageID string `json:"message_id"`
 	} `json:"message_reference"`
+}
+
+type DiscordUser struct {
+	GuildMember struct {
+		Nick string `json:"nick"`
+	} `json:"guild_member"`
 }
 
 func (p Discord) Fetch() (message.Timeline, error) {
@@ -109,7 +118,7 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 		Section:   post.Timestamp.In(tz).Format("2006-01-02 15:00"),
 		Channel:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
 		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
-		UserName:  post.Author.UserName,
+		UserName:  p.user(ch.ServerID, post.Author.ID, post.Author.UserName),
 		Text:      post.Content,
 		Reply:     post.Reference.MessageID != "",
 	}
@@ -134,4 +143,35 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 	}
 
 	return msg
+}
+
+func (p Discord) user(gid, uid, fallback string) string {
+	if nick, ok := p.users[uid]; ok {
+		return nick
+	}
+
+	query := struct {
+		Mutial  bool   `url:"with_mutual_guilds"`
+		Count   bool   `url:"with_mutual_friends_count"`
+		GuildID string `url:"guild_id"`
+	}{
+		Mutial:  true,
+		Count:   false,
+		GuildID: gid,
+	}
+
+	var user DiscordUser
+	req := p.client.New().Get("api/v9/users/" + uid + "/profile").QueryStruct(query)
+
+	if _, err := req.ReceiveSuccess(&user); err != nil {
+		return fallback
+	}
+
+	if user.GuildMember.Nick != "" {
+		p.users[uid] = user.GuildMember.Nick
+	} else {
+		p.users[uid] = fallback
+	}
+
+	return p.users[uid]
 }
