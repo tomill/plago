@@ -100,7 +100,7 @@ div blockquote {
 {{ end }}
 {{- $channel = .Channel }}
 
-<div>{{ if .Permalink }}<a href="{{ .Permalink }}">{{ .UserName }}</a>&nbsp;{{ else if .UserName }}{{ .UserName }}&nbsp;{{ end }}
+<div>{{ if .Permalink }}<a href="{{ .Permalink }}" title="{{ .Timestamp.Format "2006-01-02 15:04:05" }}">{{ .UserName }}</a>&nbsp;{{ else if .UserName }}{{ .UserName }}&nbsp;{{ end }}
 {{ if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
 {{- with .Attachments }}<br>
 {{ range . }}
