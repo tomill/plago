@@ -90,7 +90,7 @@ div blockquote {
 {{- $channel := "" }}
 {{- range .Messages }}
 
-{{- if ne $section .Section }}{{- $channel = "" }}
+{{- if ne $section .Section }}
 {{ if .Section }}<h2>{{ .Section }}</h2>{{ end }}
 {{ end }}
 {{- $section = .Section }}
