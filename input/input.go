@@ -38,7 +38,7 @@ func DummyFetcher(config.Config) (Fetcher, error) {
       "Timestamp": "2022-09-01T12:02:00+09:00",
       "Section": "2022-09-01 12:00",
       "UserName": "user1",
-      "Text": "あああああああ改行\nあああああ"
+      "Text": "あああああああ改行\nif (foo) {\n    alert();\n}\nあああああ"
     },
     {
       "Channel": "main",

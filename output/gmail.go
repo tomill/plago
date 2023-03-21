@@ -131,7 +131,12 @@ div blockquote {
 			},
 			"nl2br": func(text string) template.HTML {
 				text = html.UnescapeString(text)
-				return template.HTML(strings.ReplaceAll(template.HTMLEscapeString(text), "\n", "<br>\n"))
+				text = template.HTMLEscapeString(text)
+				text = regexp.MustCompile(`(?m)^(\s+)`).ReplaceAllStringFunc(text, func(s string) string {
+					return strings.Repeat("&nbsp;", len(s))
+				})
+				text = strings.ReplaceAll(text, "\n", "<br>\n")
+				return template.HTML(text)
 			},
 			"safe": func(s string) template.URL {
 				return template.URL(s)
