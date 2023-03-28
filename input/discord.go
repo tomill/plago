@@ -109,7 +109,7 @@ var (
 )
 
 func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message {
-	if post.Timestamp.Before(p.since) || post.Timestamp.After(p.until) {
+	if post.Timestamp.Before(p.since) || post.Timestamp.Equal(p.until) || post.Timestamp.After(p.until) {
 		return nil
 	}
 
