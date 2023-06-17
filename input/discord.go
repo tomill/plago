@@ -55,8 +55,9 @@ type DiscordMessage struct {
 	ChannelID string    `json:"channel_id"`
 	Content   string    `json:"content"`
 	Author    struct {
-		ID       string `json:"id"`
-		UserName string `json:"username"`
+		ID         string `json:"id"`
+		UserName   string `json:"username"`
+		GlobalName string `json:"global_name"`
 	} `json:"author"`
 	Attachments []struct {
 		Filename    string `json:"filename"`
@@ -118,7 +119,7 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 		Section:   post.Timestamp.In(tz).Format("2006-01-02 15:00"),
 		Channel:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
 		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
-		UserName:  p.user(ch.ServerID, post.Author.ID, post.Author.UserName),
+		UserName:  p.user(ch.ServerID, post.Author.ID, post.Author.GlobalName, post.Author.UserName),
 		Text:      post.Content,
 		Reply:     post.Reference.MessageID != "",
 	}
@@ -145,23 +146,28 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 	return msg
 }
 
-func (p Discord) user(gid, uid, fallback string) string {
+func (p Discord) user(gid, uid, global, username string) string {
 	if nick, ok := p.users[uid]; ok {
 		return nick
 	}
 
 	query := struct {
-		Mutial  bool   `url:"with_mutual_guilds"`
+		Mutual  bool   `url:"with_mutual_guilds"`
 		Count   bool   `url:"with_mutual_friends_count"`
 		GuildID string `url:"guild_id"`
 	}{
-		Mutial:  true,
+		Mutual:  true,
 		Count:   false,
 		GuildID: gid,
 	}
 
 	var user DiscordUser
 	req := p.client.New().Get("api/v9/users/" + uid + "/profile").QueryStruct(query)
+
+	fallback := global
+	if fallback == "" {
+		fallback = username
+	}
 
 	if _, err := req.ReceiveSuccess(&user); err != nil {
 		return fallback
