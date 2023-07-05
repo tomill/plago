@@ -29,6 +29,7 @@ func main() {
 		"rtm":      input.RtmFetcher,
 		"feed":     input.FeedFetcher,
 		"twitter":  input.TwitterFetcher,
+		"bluesky":  input.BlueskyFetcher,
 		"slack":    input.SlackFetcher,
 		"slack_ch": input.SlackChannelsFetcher,
 		"discord":  input.DiscordFetcher,
