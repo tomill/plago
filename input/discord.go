@@ -117,7 +117,7 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 	msg := &message.Message{
 		Timestamp: post.Timestamp,
 		Section:   post.Timestamp.In(tz).Format("2006-01-02 15:00"),
-		Channel:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
+		Channel:   ch.ServerName,
 		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
 		UserName:  p.user(ch.ServerID, post.Author.ID, post.Author.GlobalName, post.Author.UserName),
 		Text:      post.Content,
@@ -129,6 +129,8 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 	for _, v := range post.Mentions {
 		msg.Text = strings.ReplaceAll(msg.Text, fmt.Sprintf("<@%s>", v.ID), "@"+v.UserName)
 	}
+
+	msg.Text += " #" + ch.ChannelName
 
 	for _, v := range post.Attachments {
 		if strings.HasPrefix(v.ContentType, "image/") {
