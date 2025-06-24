@@ -3,6 +3,7 @@ package input
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +28,8 @@ func FeedFetcher(c config.Config) (Fetcher, error) {
 
 	return p, nil
 }
+
+var imgURLRe = regexp.MustCompile(`<img\s+[^>]*src="([^"]+)"`)
 
 func (p Feed) Fetch() (message.Timeline, error) {
 	timeline := message.Timeline{
@@ -64,6 +67,9 @@ func (p Feed) Fetch() (message.Timeline, error) {
 				Title string `json:"title"`
 				URL   string `json:"htmlUrl"`
 			} `json:"origin"`
+			Summary struct {
+				Content string `json:"content"`
+			} `json:"summary"`
 		} `json:"items"`
 	}
 	{
@@ -83,6 +89,12 @@ func (p Feed) Fetch() (message.Timeline, error) {
 			if strings.HasPrefix(tag, "user/-/label/") {
 				msg.Channel = strings.Replace(tag, "user/-/label/", "", 1)
 			}
+		}
+		if m := imgURLRe.FindStringSubmatch(item.Summary.Content); len(m) > 0 {
+			msg.AddAttachment(message.Message{
+				Type:      message.TypeImage,
+				Permalink: m[1],
+			})
 		}
 
 		timeline.Append(msg)
