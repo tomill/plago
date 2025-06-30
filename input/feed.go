@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dghubble/sling"
+
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/message"
 )
@@ -29,7 +30,7 @@ func FeedFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-var imgURLRe = regexp.MustCompile(`<img\s+[^>]*src="([^"]+)"`)
+var imgURLRe = regexp.MustCompile(`<img\s+[^>]*src="(https://[^"]+)"`)
 
 func (p Feed) Fetch() (message.Timeline, error) {
 	timeline := message.Timeline{
