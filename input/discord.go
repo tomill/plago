@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dghubble/sling"
+
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/message"
 )
@@ -130,7 +131,7 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 		msg.Text = strings.ReplaceAll(msg.Text, fmt.Sprintf("<@%s>", v.ID), "@"+v.UserName)
 	}
 
-	msg.Text += " #" + ch.ChannelName
+	msg.Text = "[" + ch.ChannelName + "] " + msg.Text
 
 	for _, v := range post.Attachments {
 		if strings.HasPrefix(v.ContentType, "image/") {
