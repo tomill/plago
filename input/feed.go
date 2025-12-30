@@ -30,7 +30,10 @@ func FeedFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-var imgURLRe = regexp.MustCompile(`<img\s+[^>]*src="(https://[^"]+)"`)
+var imgURLRe = regexp.MustCompile(`<img\s+[^>]*src="https?://([^"]+)"`)
+
+var bookTitleRe = regexp.MustCompile(`^(.+?):(.+?)` +
+	`(KADOKAWA|スターツ出版|ハーパーコリンズ・ジャパン|マイナビ出版|中央公論新社|光文社|原書房|双葉社|宝島社|実業之日本社|小学館|幻冬舎|幻冬舎コミックス|徳間書店|文藝春秋|新潮社|早川書房|星海社|東京創元社|祥伝社|筑摩書房|角川|論創社|講談社|集英社)$`)
 
 func (p Feed) Fetch() (message.Timeline, error) {
 	timeline := message.Timeline{
@@ -94,8 +97,14 @@ func (p Feed) Fetch() (message.Timeline, error) {
 		if m := imgURLRe.FindStringSubmatch(item.Summary.Content); len(m) > 0 {
 			msg.AddAttachment(message.Message{
 				Type:      message.TypeImage,
-				Permalink: m[1],
+				Permalink: `https://` + m[1],
 			})
+		}
+
+		if strings.HasPrefix(msg.Permalink, "https://mysterynavi.com/") {
+			if m := bookTitleRe.FindStringSubmatch(msg.Text); len(m) > 0 {
+				msg.Text = fmt.Sprintf(`%s / %s （%s）`, m[2], m[1], m[3])
+			}
 		}
 
 		timeline.Append(msg)
