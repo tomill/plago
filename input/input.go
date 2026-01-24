@@ -12,18 +12,22 @@ type Fetcher interface {
 	Fetch() (message.Timeline, error)
 }
 
-type Dummy struct {
+type Raw struct {
 	data string
 }
 
-func (p Dummy) Fetch() (message.Timeline, error) {
+func (p Raw) Fetch() (message.Timeline, error) {
 	var timeline message.Timeline
 	err := json.NewDecoder(strings.NewReader(p.data)).Decode(&timeline)
 	return timeline, err
 }
 
+func RawFetcher(c config.Config) (Fetcher, error) {
+	return &Raw{data: c.RawData}, nil
+}
+
 func DummyFetcher(config.Config) (Fetcher, error) {
-	return &Dummy{
+	return &Raw{
 		data: `
 {
   "Source": "dummy",
