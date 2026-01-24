@@ -2,7 +2,6 @@ package output
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 
@@ -21,12 +20,10 @@ type Dump struct {
 func DumpFlusher(c config.Config) Flusher {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetEscapeHTML(false)
-	enc.SetIndent("", "  ")
 
 	if c.RawData != "" {
 		var d message.Timeline
 		_ = json.NewDecoder(strings.NewReader(c.RawData)).Decode(&d)
-		fmt.Println("\n// raw (decoded)")
 		_ = enc.Encode(d)
 	}
 
@@ -36,6 +33,5 @@ func DumpFlusher(c config.Config) Flusher {
 }
 
 func (p Dump) Flush(timeline message.Timeline) error {
-	fmt.Println("\n// timeline")
 	return p.json.Encode(timeline)
 }
