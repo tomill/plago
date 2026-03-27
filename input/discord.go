@@ -29,7 +29,7 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 		client: sling.New().
 			Base("https://discord.com/").
 			Set("Authorization", c.DiscordToken).
-			Set("UserAgent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"),
+			Set("UserAgent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"),
 	}
 
 	res, err := c.Sheet().GetLists("discord.channels", DiscordChannel{})
@@ -63,8 +63,23 @@ type DiscordMessage struct {
 	Attachments []struct {
 		Filename    string `json:"filename"`
 		URL         string `json:"url"`
+		ProxyURL    string `json:"proxy_url"`
 		ContentType string `json:"content_type"`
 	} `json:"attachments"`
+	Embeds []struct {
+		Type        string `json:"type"`
+		URL         string `json:"url,omitempty"`
+		Title       string `json:"title,omitempty"`
+		Description string `json:"description,omitempty"`
+		Image       *struct {
+			ProxyURL    string `json:"proxy_url,omitempty"`
+			ContentType string `json:"content_type,omitempty"`
+		} `json:"image,omitempty"`
+		Thumbnail *struct {
+			ProxyURL    string `json:"proxy_url,omitempty"`
+			ContentType string `json:"content_type,omitempty"`
+		} `json:"thumbnail,omitempty"`
+	} `json:"embeds"`
 	Mentions []struct {
 		ID       string `json:"id"`
 		UserName string `json:"username"`
@@ -137,11 +152,29 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 		if strings.HasPrefix(v.ContentType, "image/") {
 			msg.AddAttachment(message.Message{
 				Type:      message.TypeImage,
-				Permalink: v.URL,
+				Permalink: v.ProxyURL,
 			})
 		} else {
 			msg.AddAttachment(message.Message{
 				Text: v.Filename,
+			})
+		}
+	}
+
+	for _, v := range post.Embeds {
+		msg.AddAttachment(message.Message{
+			Text: strings.Join([]string{v.Title, v.Description}, "\n"),
+		})
+
+		if v.Image != nil && strings.HasPrefix(v.Image.ContentType, "image/") {
+			msg.AddAttachment(message.Message{
+				Type:      message.TypeImage,
+				Permalink: v.Image.ProxyURL,
+			})
+		} else if v.Thumbnail != nil && strings.HasPrefix(v.Thumbnail.ContentType, "image/") {
+			msg.AddAttachment(message.Message{
+				Type:      message.TypeImage,
+				Permalink: v.Thumbnail.ProxyURL,
 			})
 		}
 	}
