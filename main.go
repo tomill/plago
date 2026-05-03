@@ -31,6 +31,7 @@ func main() {
 		"feed":     input.FeedFetcher,
 		"twitter":  input.TwitterFetcher,
 		"xlist":    input.TwitterListFetcher,
+		"togetter": input.TogetterFetcher,
 		"bluesky":  input.BlueskyFetcher,
 		"slack":    input.SlackFetcher,
 		"slack_ch": input.SlackChannelsFetcher,

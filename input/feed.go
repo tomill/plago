@@ -38,8 +38,8 @@ var bookTitleRe = regexp.MustCompile(`^(.+?):(.+?)` +
 func (p Feed) Fetch() (message.Timeline, error) {
 	timeline := message.Timeline{
 		Source:  "feed",
-		Subject: p.since.Format(time.DateOnly),
 		RefID:   "feed",
+		Subject: p.since.Format(time.DateOnly),
 	}
 
 	var list feedItems
