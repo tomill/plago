@@ -75,6 +75,10 @@ func (p Feed) Fetch() (message.Timeline, error) {
 			Summary struct {
 				Content string `json:"content"`
 			} `json:"summary"`
+			Enclosure []struct {
+				URL  string `json:"href"`
+				Type string `json:"type"`
+			} `json:"enclosure"`
 		} `json:"items"`
 	}
 	{
@@ -95,11 +99,21 @@ func (p Feed) Fetch() (message.Timeline, error) {
 				msg.Channel = strings.Replace(tag, "user/-/label/", "", 1)
 			}
 		}
+
 		if m := imgURLRe.FindStringSubmatch(item.Summary.Content); len(m) > 0 {
 			msg.AddAttachment(message.Message{
 				Type:      message.TypeImage,
 				Permalink: `https://` + m[1],
 			})
+		}
+
+		for _, enclosure := range item.Enclosure {
+			if strings.HasPrefix(enclosure.Type, "image/") {
+				msg.AddAttachment(message.Message{
+					Type:      message.TypeImage,
+					Permalink: enclosure.URL,
+				})
+			}
 		}
 
 		if strings.HasPrefix(msg.Permalink, "https://mysterynavi.com/") {

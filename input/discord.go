@@ -84,6 +84,10 @@ type DiscordMessage struct {
 		ID       string `json:"id"`
 		UserName string `json:"username"`
 	} `json:"mentions"`
+	StickerItems []struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"sticker_items"`
 	Reference struct {
 		ChannelID string `json:"channel_id"`
 		GuildID   string `json:"guild_id"`
@@ -177,6 +181,13 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 				Permalink: v.Thumbnail.ProxyURL,
 			})
 		}
+	}
+
+	for _, v := range post.StickerItems {
+		msg.AddAttachment(message.Message{
+			Type:      message.TypeImage,
+			Permalink: fmt.Sprintf(`https://media.discordapp.net/stickers/%s.png?size=320&passthrough=false`, v.ID),
+		})
 	}
 
 	return msg
