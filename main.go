@@ -24,18 +24,18 @@ func main() {
 	container.MustSingleton(con, config.GetOptions)
 
 	for name, fn := range map[string]func(config.Config) (input.Fetcher, error){
-		"dummy":    input.DummyFetcher,
-		"raw":      input.RawFetcher,
-		"stdin":    input.StdinFetcher,
-		"rtm":      input.RtmFetcher,
-		"feed":     input.FeedFetcher,
-		"twitter":  input.TwitterFetcher,
-		"xlist":    input.TwitterListFetcher,
-		"togetter": input.TogetterFetcher,
-		"bluesky":  input.BlueskyFetcher,
-		"slack":    input.SlackFetcher,
-		"slack_ch": input.SlackChannelsFetcher,
-		"discord":  input.DiscordFetcher,
+		"dummy":      input.DummyFetcher,
+		"raw":        input.RawFetcher,
+		"stdin":      input.StdinFetcher,
+		"rtm":        input.RtmFetcher,
+		"feed":       input.FeedFetcher,
+		"x-timeline": input.TwitterFetcher,
+		"x-list":     input.TwitterListFetcher,
+		"togetter":   input.TogetterFetcher,
+		"bluesky":    input.BlueskyFetcher,
+		"slack":      input.SlackFetcher,
+		"slack_ch":   input.SlackChannelsFetcher,
+		"discord":    input.DiscordFetcher,
 	} {
 		container.MustNamedTransientLazy(con, name, fn)
 	}
