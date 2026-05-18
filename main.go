@@ -24,18 +24,17 @@ func main() {
 	container.MustSingleton(con, config.GetOptions)
 
 	for name, fn := range map[string]func(config.Config) (input.Fetcher, error){
-		"dummy":      input.DummyFetcher,
-		"raw":        input.RawFetcher,
-		"stdin":      input.StdinFetcher,
-		"rtm":        input.RtmFetcher,
-		"feed":       input.FeedFetcher,
-		"x-timeline": input.TwitterFetcher,
-		"x-list":     input.TwitterListFetcher,
-		"togetter":   input.TogetterFetcher,
-		"bluesky":    input.BlueskyFetcher,
-		"slack":      input.SlackFetcher,
-		"slack_ch":   input.SlackChannelsFetcher,
-		"discord":    input.DiscordFetcher,
+		"dummy":    input.DummyFetcher,
+		"raw":      input.RawFetcher,
+		"stdin":    input.StdinFetcher,
+		"rtm":      input.RtmFetcher,
+		"feed":     input.FeedFetcher,
+		"twitter":  input.TwitterFetcher,
+		"togetter": input.TogetterFetcher,
+		"bluesky":  input.BlueskyFetcher,
+		"slack":    input.SlackFetcher,
+		"slack_ch": input.SlackChannelsFetcher,
+		"discord":  input.DiscordFetcher,
 	} {
 		container.MustNamedTransientLazy(con, name, fn)
 	}
@@ -50,7 +49,7 @@ func main() {
 		msg = fmt.Sprintf("--in %s --out %s --since %q --until %q", c.Input, c.Output,
 			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
 
-		log.Printf("initialising %s", msg)
+		log.Printf("initialising %s\n\n", msg)
 
 		var in input.Fetcher
 		var out output.Flusher
@@ -63,11 +62,11 @@ func main() {
 		}
 
 		if len(timeline.Messages) == 0 {
-			log.Printf("fetched no data from %s. quit.", c.Input)
+			log.Printf("fetched no data from %s. quit.\n", c.Input)
 			return nil
 		}
 
-		log.Printf("fetched data from %s %d line(s). flush to %s ...", c.Input, len(timeline.Messages), c.Output)
+		log.Printf("fetched data from %s %d line(s). flush to %s ...\n\n", c.Input, len(timeline.Messages), c.Output)
 		return out.Flush(timeline)
 	})
 }
