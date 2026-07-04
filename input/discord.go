@@ -2,9 +2,7 @@ package input
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"regexp"
 	"strings"
@@ -15,33 +13,6 @@ import (
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/message"
 )
-
-type debugTransport struct {
-	rt http.RoundTripper
-}
-
-func (t *debugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if dump, err := httputil.DumpRequest(req, true); err == nil {
-		log.Printf("==> Request\n%s", dump)
-	}
-
-	resp, err := t.rt.RoundTrip(req)
-	if err != nil {
-		return resp, err
-	}
-
-	if dump, err := httputil.DumpResponse(resp, true); err == nil {
-		log.Printf("<-- Response\n%s\n", dump)
-	}
-
-	return resp, err
-}
-
-func newDebugClient() *http.Client {
-	return &http.Client{
-		Transport: &debugTransport{rt: http.DefaultTransport},
-	}
-}
 
 type Discord struct {
 	since    time.Time
