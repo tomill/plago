@@ -2,7 +2,10 @@ package input
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"net/http/httputil"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -12,6 +15,33 @@ import (
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/message"
 )
+
+type debugTransport struct {
+	rt http.RoundTripper
+}
+
+func (t *debugTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if dump, err := httputil.DumpRequest(req, true); err == nil {
+		log.Printf("==> Request\n%s", dump)
+	}
+
+	resp, err := t.rt.RoundTrip(req)
+	if err != nil {
+		return resp, err
+	}
+
+	if dump, err := httputil.DumpResponse(resp, true); err == nil {
+		log.Printf("<-- Response\n%s\n", dump)
+	}
+
+	return resp, err
+}
+
+func newDebugClient() *http.Client {
+	return &http.Client{
+		Transport: &debugTransport{rt: http.DefaultTransport},
+	}
+}
 
 type Discord struct {
 	since    time.Time
@@ -32,6 +62,10 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 			Set("UserAgent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"),
 	}
 
+	if os.Getenv("DEBUG") == "1" {
+		p.client = p.client.Client(newDebugClient())
+	}
+
 	res, err := c.Sheet().GetLists("discord.channels", DiscordChannel{})
 	if err != nil {
 		return nil, err
@@ -48,6 +82,7 @@ type DiscordChannel struct {
 	ServerName  string
 	ChannelID   string
 	ChannelName string
+	Fetch       string
 }
 
 type DiscordMessage struct {
@@ -95,10 +130,12 @@ type DiscordMessage struct {
 	} `json:"message_reference"`
 }
 
-type DiscordUser struct {
-	GuildMember struct {
-		Nick string `json:"nick"`
-	} `json:"guild_member"`
+type DiscordMember struct {
+	Nick string `json:"nick"`
+	User struct {
+		ID       string `json:"id"`
+		UserName string `json:"username"`
+	} `json:"user"`
 }
 
 func (p Discord) Fetch() (message.Timeline, error) {
@@ -109,7 +146,7 @@ func (p Discord) Fetch() (message.Timeline, error) {
 
 	for _, ch := range p.channels {
 		var messages []DiscordMessage
-		if res, err := p.client.New().Get("api/v9/channels/" + ch.ChannelID + "/messages?limit=50").ReceiveSuccess(&messages); err != nil {
+		if res, err := p.client.New().Get("api/v10/channels/" + ch.ChannelID + "/messages?limit=50").ReceiveSuccess(&messages); err != nil {
 			return timeline, fmt.Errorf("discord web api call error: %w", err)
 		} else if res.StatusCode != http.StatusOK {
 			return timeline, fmt.Errorf("request error: %s - %s", res.Request.URL.Path, res.Status)
@@ -126,7 +163,8 @@ func (p Discord) Fetch() (message.Timeline, error) {
 }
 
 var (
-	emoji = regexp.MustCompile(`<(:[^:]+:)\d+>`)
+	emoji          = regexp.MustCompile(`<(:[^:]+:)\d+>`)
+	markdownEscape = regexp.MustCompile(`\\([_*\[\]()~` + "`" + `>#+\-=|{}.!])`)
 )
 
 func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message {
@@ -135,7 +173,7 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 	}
 
 	msg := &message.Message{
-		Timestamp: post.Timestamp,
+		Timestamp: post.Timestamp.In(tz),
 		Section:   post.Timestamp.In(tz).Format("2006-01-02 15:00"),
 		Channel:   ch.ServerName,
 		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
@@ -167,7 +205,7 @@ func (p Discord) build(ch DiscordChannel, post DiscordMessage) *message.Message 
 
 	for _, v := range post.Embeds {
 		msg.AddAttachment(message.Message{
-			Text: strings.Join([]string{v.Title, v.Description}, "\n"),
+			Text: strings.Join([]string{v.Title, markdownEscape.ReplaceAllString(v.Description, "$1")}, "\n"),
 		})
 
 		if v.Image != nil && strings.HasPrefix(v.Image.ContentType, "image/") {
@@ -198,30 +236,20 @@ func (p Discord) user(gid, uid, global, username string) string {
 		return nick
 	}
 
-	query := struct {
-		Mutual  bool   `url:"with_mutual_guilds"`
-		Count   bool   `url:"with_mutual_friends_count"`
-		GuildID string `url:"guild_id"`
-	}{
-		Mutual:  true,
-		Count:   false,
-		GuildID: gid,
-	}
-
-	var user DiscordUser
-	req := p.client.New().Get("api/v9/users/" + uid + "/profile").QueryStruct(query)
+	var member DiscordMember
+	req := p.client.New().Get("api/v10/guilds/" + gid + "/members/" + uid)
 
 	fallback := global
 	if fallback == "" {
 		fallback = username
 	}
 
-	if _, err := req.ReceiveSuccess(&user); err != nil {
+	if _, err := req.ReceiveSuccess(&member); err != nil {
 		return fallback
 	}
 
-	if user.GuildMember.Nick != "" {
-		p.users[uid] = user.GuildMember.Nick
+	if member.Nick != "" {
+		p.users[uid] = member.Nick
 	} else {
 		p.users[uid] = fallback
 	}
