@@ -7,16 +7,16 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/samber/lo"
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/message"
 )
 
 type Discord struct {
-	since    time.Time
-	until    time.Time
-	session  *discordgo.Session
+	config.ExecParams
+	client   *discordgo.Session
 	channels []DiscordChannel
-	users    map[string]string
+	users    *memomap[string]
 }
 
 type DiscordChannel struct {
@@ -27,24 +27,11 @@ type DiscordChannel struct {
 }
 
 func DiscordFetcher(c config.Config) (Fetcher, error) {
-	session, err := discordgo.New(c.DiscordToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create discord session: %w", err)
-	}
-
 	p := &Discord{
-		since:   c.Since,
-		until:   c.Until,
-		users:   map[string]string{},
-		session: session,
-	}
-
-	res, err := c.Sheet().GetLists("discord.channels", DiscordChannel{})
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range res {
-		p.channels = append(p.channels, v.(DiscordChannel))
+		ExecParams: c.ExecParams,
+		client:     lo.Must(discordgo.New(c.DiscordToken)),
+		channels:   config.MustGetSheetValues[DiscordChannel](c.SheetCredentials, c.SheetID, "discord.channels"),
+		users:      newMemomap[string](),
 	}
 
 	return p, nil
@@ -52,32 +39,12 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 
 func (p Discord) Fetch() (message.Timeline, error) {
 	timeline := message.Timeline{
-		Source:  "discord",
-		Subject: p.since.Format(time.DateOnly),
+		Source:  p.Input,
+		Subject: p.Since.Format(time.DateOnly),
 	}
 
 	for _, ch := range p.channels {
-		channel, err := p.session.Channel(ch.ChannelID)
-		if err != nil {
-			continue
-		}
-		if ch.ChannelName == "" {
-			ch.ChannelName = channel.Name
-		}
-
-		if ch.ServerName == "" {
-			guild, err := p.session.Guild(ch.ServerID)
-			if err != nil {
-				ch.ServerName = ch.ServerID
-			}
-			ch.ServerName = guild.Name
-		}
-
-		messages, err := p.session.ChannelMessages(ch.ChannelID, 50, "", "", "")
-		if err != nil {
-			return timeline, fmt.Errorf("discord api call error: %w", err)
-		}
-
+		messages := lo.Must(p.client.ChannelMessages(ch.ChannelID, 100, "", "", ""))
 		for _, v := range messages {
 			if msg := p.build(ch, v); msg != nil {
 				timeline.Append(*msg)
@@ -89,29 +56,34 @@ func (p Discord) Fetch() (message.Timeline, error) {
 }
 
 var (
-	emoji          = regexp.MustCompile(`<(:[^:]+:)\d+>`)
-	markdownEscape = regexp.MustCompile(`\\([_*\[\]()~` + "`" + `>#+\-=|{}.!])`)
+	emoji = regexp.MustCompile(`<(:[^:]+:)\d+>`)
 )
 
 func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Message {
 	ts := post.Timestamp.In(tz)
-	if ts.Before(p.since) || ts.Equal(p.until) || ts.After(p.until) {
+	if !timeinrange(ts, p.ExecParams) {
 		return nil
 	}
 
 	msg := &message.Message{
 		Timestamp: ts,
 		Section:   ts.Format("2006-01-02 15:00"),
-		Channel:   ch.ServerName,
-		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
-		UserName:  p.user(ch.ServerID, post.Author),
-		Text:      post.ContentWithMentionsReplaced(),
+		Channel:   fmt.Sprintf("[%s] #%s", ch.ServerName, ch.ChannelName),
+		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", post.GuildID, post.ChannelID, post.ID),
 		Reply:     post.ReferencedMessage != nil,
+		UserName: p.users.get(post.GuildID+post.Author.ID, func() string {
+			member, err := p.client.GuildMember(post.GuildID, post.Author.ID)
+			if err == nil && member.Nick != "" {
+				return member.Nick
+			}
+			return post.Author.DisplayName()
+		}),
+		Text: pipe(post.ContentWithMentionsReplaced(),
+			func(s string) string {
+				return emoji.ReplaceAllString(s, `$1`)
+			},
+		),
 	}
-
-	msg.Text = emoji.ReplaceAllString(msg.Text, `$1`)
-
-	msg.Text = "[" + ch.ChannelName + "] " + msg.Text
 
 	for _, v := range post.Attachments {
 		if strings.HasPrefix(v.ContentType, "image/") {
@@ -122,24 +94,6 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Mess
 		} else {
 			msg.AddAttachment(message.Message{
 				Text: v.Filename,
-			})
-		}
-	}
-
-	for _, v := range post.Embeds {
-		msg.AddAttachment(message.Message{
-			Text: strings.Join([]string{v.Title, markdownEscape.ReplaceAllString(v.Description, "$1")}, "\n"),
-		})
-
-		if v.Image != nil {
-			msg.AddAttachment(message.Message{
-				Type:      message.TypeImage,
-				Permalink: v.Image.ProxyURL,
-			})
-		} else if v.Thumbnail != nil {
-			msg.AddAttachment(message.Message{
-				Type:      message.TypeImage,
-				Permalink: v.Thumbnail.ProxyURL,
 			})
 		}
 	}
@@ -159,20 +113,23 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Mess
 		}
 	}
 
+	for _, v := range post.Embeds {
+		msg.AddAttachment(message.Message{
+			Text: strings.Join([]string{v.Author.Name, v.Title, markdownUnescape(v.Description)}, "\n"),
+		})
+
+		if v.Image != nil {
+			msg.AddAttachment(message.Message{
+				Type:      message.TypeImage,
+				Permalink: v.Image.ProxyURL,
+			})
+		} else if v.Thumbnail != nil {
+			msg.AddAttachment(message.Message{
+				Type:      message.TypeImage,
+				Permalink: v.Thumbnail.ProxyURL,
+			})
+		}
+	}
+
 	return msg
-}
-
-func (p Discord) user(gid string, user *discordgo.User) string {
-	if nick, ok := p.users[user.ID]; ok {
-		return nick
-	}
-
-	member, err := p.session.GuildMember(gid, user.ID)
-	if err != nil || member.Nick == "" {
-		p.users[user.ID] = user.DisplayName()
-	} else {
-		p.users[user.ID] = member.Nick
-	}
-
-	return p.users[user.ID]
 }

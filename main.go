@@ -33,7 +33,6 @@ func main() {
 		"togetter": input.TogetterFetcher,
 		"bluesky":  input.BlueskyFetcher,
 		"slack":    input.SlackFetcher,
-		"slack_ch": input.SlackChannelsFetcher,
 		"discord":  input.DiscordFetcher,
 	} {
 		container.MustNamedTransientLazy(con, name, fn)
