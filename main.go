@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 	"runtime/debug"
 	"time"
 
@@ -12,7 +14,22 @@ import (
 	"github.com/tomill/centre/output"
 )
 
+func newLogger() *slog.Logger {
+	var handler slog.Handler
+	switch os.Getenv("LOG_FORMAT") {
+	case "json":
+		handler = slog.NewJSONHandler(os.Stdout, nil)
+	default: // "text" もしくは未設定時はtextにフォールバック
+		handler = slog.NewTextHandler(os.Stdout, nil)
+	}
+
+	return slog.New(handler)
+}
+
 func main() {
+	logger := newLogger()
+	slog.SetDefault(logger)
+
 	var msg string
 	defer func() {
 		if err := recover(); err != nil {
@@ -45,7 +62,7 @@ func main() {
 	}
 
 	container.MustCall(con, func(c config.Config) error {
-		msg = fmt.Sprintf("--in %s --out %s --since %q --until %q", c.Input, c.Output,
+		msg = fmt.Sprintf("--in %s --out %s --since '%s' --until '%s'", c.Input, c.Output,
 			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
 
 		log.Printf("initialising %s\n\n", msg)

@@ -44,7 +44,10 @@ func (p Discord) Fetch() (message.Timeline, error) {
 	}
 
 	for _, ch := range p.channels {
-		messages := lo.Must(p.client.ChannelMessages(ch.ChannelID, 100, "", "", ""))
+		messages, err := p.client.ChannelMessages(ch.ChannelID, 100, "", "", "")
+		if err != nil {
+			return timeline, err
+		}
 		for _, v := range messages {
 			timeline.Append(p.build(ch, v))
 		}
@@ -67,10 +70,10 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Mess
 		Timestamp: ts,
 		Section:   ts.Format("2006-01-02 15:00"),
 		Channel:   fmt.Sprintf("[%s] %s", ch.ServerName, ch.ChannelName),
-		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", post.GuildID, post.ChannelID, post.ID),
+		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
 		Reply:     post.ReferencedMessage != nil,
-		UserName: p.users.get(post.GuildID+post.Author.ID, func() string {
-			member, err := p.client.GuildMember(post.GuildID, post.Author.ID)
+		UserName: p.users.get(ch.ServerID+post.Author.ID, func() string {
+			member, err := p.client.GuildMember(ch.ServerID, post.Author.ID)
 			if err == nil && member.Nick != "" {
 				return member.Nick
 			}
