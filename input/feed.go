@@ -89,7 +89,7 @@ func (p Feed) Fetch() (message.Timeline, error) {
 	}
 
 	for _, item := range contentsResponse.Items {
-		msg := message.Message{
+		msg := &message.Message{
 			UserName:  item.Origin.Title,
 			Permalink: item.Canonical[0].Href,
 			Text:      item.Title,

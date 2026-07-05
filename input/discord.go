@@ -46,9 +46,7 @@ func (p Discord) Fetch() (message.Timeline, error) {
 	for _, ch := range p.channels {
 		messages := lo.Must(p.client.ChannelMessages(ch.ChannelID, 100, "", "", ""))
 		for _, v := range messages {
-			if msg := p.build(ch, v); msg != nil {
-				timeline.Append(*msg)
-			}
+			timeline.Append(p.build(ch, v))
 		}
 	}
 
@@ -56,7 +54,7 @@ func (p Discord) Fetch() (message.Timeline, error) {
 }
 
 var (
-	emoji = regexp.MustCompile(`<(:[^:]+:)\d+>`)
+	reEmoji = regexp.MustCompile(`<(:[^:]+:)\d+>`)
 )
 
 func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Message {
@@ -68,7 +66,7 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Mess
 	msg := &message.Message{
 		Timestamp: ts,
 		Section:   ts.Format("2006-01-02 15:00"),
-		Channel:   fmt.Sprintf("[%s] #%s", ch.ServerName, ch.ChannelName),
+		Channel:   fmt.Sprintf("[%s] %s", ch.ServerName, ch.ChannelName),
 		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", post.GuildID, post.ChannelID, post.ID),
 		Reply:     post.ReferencedMessage != nil,
 		UserName: p.users.get(post.GuildID+post.Author.ID, func() string {
@@ -80,7 +78,7 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Mess
 		}),
 		Text: pipe(post.ContentWithMentionsReplaced(),
 			func(s string) string {
-				return emoji.ReplaceAllString(s, `$1`)
+				return reEmoji.ReplaceAllString(s, `$1`)
 			},
 		),
 	}
