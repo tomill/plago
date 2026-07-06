@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golobby/container/v3"
+	"github.com/phsym/console-slog"
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/input"
 	"github.com/tomill/centre/output"
@@ -16,8 +17,13 @@ import (
 
 func main() {
 	if os.Getenv("LOG_FORMAT") == "json" {
-		handler := slog.NewJSONHandler(os.Stdout, nil)
-		slog.SetDefault(slog.New(handler))
+		slog.SetDefault(slog.New(
+			slog.NewJSONHandler(os.Stderr, nil),
+		))
+	} else {
+		slog.SetDefault(slog.New(
+			console.NewHandler(os.Stderr, nil),
+		))
 	}
 
 	var msg string
@@ -71,7 +77,7 @@ func main() {
 			return nil
 		}
 
-		log.Printf("fetched data from %s %d line(s). flush to %s ...", c.Input, len(timeline.Messages), c.Output)
+		log.Printf("data fetched from %s %d line(s). flush to %s ...", c.Input, len(timeline.Messages), c.Output)
 		return out.Flush(timeline)
 	})
 }

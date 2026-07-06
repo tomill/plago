@@ -14,7 +14,7 @@ type Stdin struct {
 }
 
 func StdinFetcher(c config.Config) (Fetcher, error) {
-	if fi, _ := os.Stdin.Stat(); (fi.Mode() & os.ModeCharDevice) == 0 {
+	if fi, _ := os.Stdin.Stat(); fi.Mode()&os.ModeNamedPipe == 0 {
 		return nil, fmt.Errorf("no pipe")
 	}
 
