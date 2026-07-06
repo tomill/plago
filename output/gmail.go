@@ -101,11 +101,11 @@ div blockquote {
 {{- $channel = .Channel }}
 {{- $lead := .UserName }}{{ if not .UserName }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
 
-<div>{{ if .Permalink }}<a href="{{ .Permalink }}" title="{{ .Timestamp.Format "2006-01-02 15:04:05" }}">{{ $lead }}</a> &nbsp;{{ else }}{{ $lead }} &nbsp;{{ end }}
+<div>{{ if .URL }}<a href="{{ .URL }}" title="{{ .Timestamp.Format "2006-01-02 15:04:05" }}">{{ $lead }}</a> &nbsp;{{ else }}{{ $lead }} &nbsp;{{ end }}
 {{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
 {{- with .Attachments }}<br>
 {{ range . }}
-	{{- if eq .Type "image" }}<img src="{{ .Permalink | safe }}">
+	{{- if eq .Type "image" }}<img src="{{ .URL | safe }}">
 	{{- else }}
   <blockquote>{{ .Text | compact | max 800 | nl2br }}</blockquote>{{ end }}
 {{- end }}

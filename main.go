@@ -39,7 +39,6 @@ func main() {
 	for name, fn := range map[string]func(config.Config) (input.Fetcher, error){
 		"dummy":    input.DummyFetcher,
 		"stdin":    input.StdinFetcher,
-		"rtm":      input.RtmFetcher,
 		"feed":     input.FeedFetcher,
 		"twitter":  input.TwitterFetcher,
 		"togetter": input.TogetterFetcher,
