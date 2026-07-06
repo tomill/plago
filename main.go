@@ -14,21 +14,11 @@ import (
 	"github.com/tomill/centre/output"
 )
 
-func newLogger() *slog.Logger {
-	var handler slog.Handler
-	switch os.Getenv("LOG_FORMAT") {
-	case "json":
-		handler = slog.NewJSONHandler(os.Stdout, nil)
-	default: // "text" もしくは未設定時はtextにフォールバック
-		handler = slog.NewTextHandler(os.Stdout, nil)
-	}
-
-	return slog.New(handler)
-}
-
 func main() {
-	logger := newLogger()
-	slog.SetDefault(logger)
+	if os.Getenv("LOG_FORMAT") == "json" {
+		handler := slog.NewJSONHandler(os.Stdout, nil)
+		slog.SetDefault(slog.New(handler))
+	}
 
 	var msg string
 	defer func() {
@@ -42,7 +32,6 @@ func main() {
 
 	for name, fn := range map[string]func(config.Config) (input.Fetcher, error){
 		"dummy":    input.DummyFetcher,
-		"raw":      input.RawFetcher,
 		"stdin":    input.StdinFetcher,
 		"rtm":      input.RtmFetcher,
 		"feed":     input.FeedFetcher,
@@ -55,7 +44,7 @@ func main() {
 		container.MustNamedTransientLazy(con, name, fn)
 	}
 	for name, fn := range map[string]func(config.Config) output.Flusher{
-		"dump":  output.DumpFlusher,
+		"json":  output.JSONFlusher,
 		"gmail": output.GmailFlusher,
 	} {
 		container.MustNamedTransientLazy(con, name, fn)
@@ -65,7 +54,7 @@ func main() {
 		msg = fmt.Sprintf("--in %s --out %s --since '%s' --until '%s'", c.Input, c.Output,
 			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
 
-		log.Printf("initialising %s\n\n", msg)
+		log.Printf("initialising %s", msg)
 
 		var in input.Fetcher
 		var out output.Flusher
@@ -78,11 +67,11 @@ func main() {
 		}
 
 		if len(timeline.Messages) == 0 {
-			log.Printf("fetched no data from %s. quit.\n", c.Input)
+			log.Printf("fetched no data from %s. quit.", c.Input)
 			return nil
 		}
 
-		log.Printf("fetched data from %s %d line(s). flush to %s ...\n\n", c.Input, len(timeline.Messages), c.Output)
+		log.Printf("fetched data from %s %d line(s). flush to %s ...", c.Input, len(timeline.Messages), c.Output)
 		return out.Flush(timeline)
 	})
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/samber/lo"
@@ -38,10 +37,7 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 }
 
 func (p Discord) Fetch() (message.Timeline, error) {
-	timeline := message.Timeline{
-		Source:  p.Input,
-		Subject: p.Since.Format(time.DateOnly),
-	}
+	timeline := message.NewTimeline(p.ExecParams)
 
 	for _, ch := range p.channels {
 		messages, err := p.client.ChannelMessages(ch.ChannelID, 100, "", "", "")
@@ -70,7 +66,7 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Mess
 		Timestamp: ts,
 		Section:   ts.Format("2006-01-02 15:00"),
 		Channel:   fmt.Sprintf("[%s] %s", ch.ServerName, ch.ChannelName),
-		Permalink: fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
+		URL:       fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
 		Reply:     post.ReferencedMessage != nil,
 		UserName: p.users.get(ch.ServerID+post.Author.ID, func() string {
 			member, err := p.client.GuildMember(ch.ServerID, post.Author.ID)
@@ -89,8 +85,8 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Mess
 	for _, v := range post.Attachments {
 		if strings.HasPrefix(v.ContentType, "image/") {
 			msg.AddAttachment(message.Message{
-				Type:      message.TypeImage,
-				Permalink: v.ProxyURL,
+				Type: message.TypeImage,
+				URL:  v.ProxyURL,
 			})
 		} else {
 			msg.AddAttachment(message.Message{
@@ -103,13 +99,13 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Mess
 		switch v.FormatType {
 		case discordgo.StickerFormatTypeGIF:
 			msg.AddAttachment(message.Message{
-				Type:      message.TypeImage,
-				Permalink: fmt.Sprintf(`https://media.discordapp.net/stickers/%s.gif?size=320&passthrough=false`, v.ID),
+				Type: message.TypeImage,
+				URL:  fmt.Sprintf(`https://media.discordapp.net/stickers/%s.gif?size=320&passthrough=false`, v.ID),
 			})
 		default:
 			msg.AddAttachment(message.Message{
-				Type:      message.TypeImage,
-				Permalink: fmt.Sprintf(`https://cdn.discordapp.net/stickers/%s.png?size=320&passthrough=false`, v.ID),
+				Type: message.TypeImage,
+				URL:  fmt.Sprintf(`https://cdn.discordapp.net/stickers/%s.png?size=320&passthrough=false`, v.ID),
 			})
 		}
 	}
@@ -121,13 +117,13 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *message.Mess
 
 		if v.Image != nil {
 			msg.AddAttachment(message.Message{
-				Type:      message.TypeImage,
-				Permalink: v.Image.ProxyURL,
+				Type: message.TypeImage,
+				URL:  v.Image.ProxyURL,
 			})
 		} else if v.Thumbnail != nil {
 			msg.AddAttachment(message.Message{
-				Type:      message.TypeImage,
-				Permalink: v.Thumbnail.ProxyURL,
+				Type: message.TypeImage,
+				URL:  v.Thumbnail.ProxyURL,
 			})
 		}
 	}

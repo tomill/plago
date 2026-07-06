@@ -91,7 +91,7 @@ func (p Feed) Fetch() (message.Timeline, error) {
 	for _, item := range contentsResponse.Items {
 		msg := &message.Message{
 			UserName:  item.Origin.Title,
-			Permalink: item.Canonical[0].Href,
+			URL: item.Canonical[0].Href,
 			Text:      item.Title,
 		}
 		for _, tag := range item.Categories {
@@ -103,7 +103,7 @@ func (p Feed) Fetch() (message.Timeline, error) {
 		if m := imgURLRe.FindStringSubmatch(item.Summary.Content); len(m) > 0 {
 			msg.AddAttachment(message.Message{
 				Type:      message.TypeImage,
-				Permalink: `https://` + m[1],
+				URL: `https://` + m[1],
 			})
 		}
 
@@ -111,12 +111,12 @@ func (p Feed) Fetch() (message.Timeline, error) {
 			if strings.HasPrefix(enclosure.Type, "image/") {
 				msg.AddAttachment(message.Message{
 					Type:      message.TypeImage,
-					Permalink: enclosure.URL,
+					URL: enclosure.URL,
 				})
 			}
 		}
 
-		if strings.HasPrefix(msg.Permalink, "https://mysterynavi.com/") {
+		if strings.HasPrefix(msg.URL, "https://mysterynavi.com/") {
 			if m := bookTitleRe.FindStringSubmatch(msg.Text); len(m) > 0 {
 				msg.Text = fmt.Sprintf(`%s / %s （%s）`, m[2], m[1], m[3])
 			}
