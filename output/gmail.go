@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/smtp"
 	"net/textproto"
+	"os"
 	"regexp"
 	"strings"
 	"unicode"
@@ -45,6 +46,12 @@ func (p Gmail) Flush(timeline message.Timeline) error {
 		},
 		Subject: timeline.Subject,
 		HTML:    []byte(body),
+	}
+
+	if os.Getenv("DEBUG") != "" {
+		fmt.Printf("--\n%#v\n", msg)
+		fmt.Println(body)
+		return nil
 	}
 
 	err = msg.Send(
@@ -90,26 +97,39 @@ div blockquote {
 {{- $channel := "" }}
 {{- range .Messages }}
 
-{{- if ne $section .Section }}
-{{ if .Section }}<h2>{{ .Section }}</h2>{{ end }}
-{{ end }}
-{{- $section = .Section }}
+	{{- if ne $section .Section }}
+	{{ if .Section }}<h2>{{ .Section }}</h2>{{ end }}
+	{{ end }}
+	{{- $section = .Section }}
 
-{{- if ne $channel .Channel }}
-{{ if .Channel }}<h3>{{ .Channel }}</h3>{{ end }}
-{{ end }}
-{{- $channel = .Channel }}
-{{- $lead := .UserName }}{{ if not .UserName }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
+	{{- if ne $channel .Channel }}
+	{{ if .Channel }}<h3>{{ .Channel }}</h3>{{ end }}
+	{{ end }}
+	{{- $channel = .Channel }}
 
-<div>{{ if .URL }}<a href="{{ .URL }}" title="{{ .Timestamp.Format "2006-01-02 15:04:05" }}">{{ $lead }}</a> &nbsp;{{ else }}{{ $lead }} &nbsp;{{ end }}
-{{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
-{{- with .Attachments }}<br>
-{{ range . }}
-	{{- if eq .Type "image" }}<img src="{{ .URL | safe }}">
-	{{- else }}
-  <blockquote>{{ .Text | compact | max 800 | nl2br }}</blockquote>{{ end }}
-{{- end }}
-{{- end }}</div>
+	<div>
+		{{- $lead := .UserName }}{{ if not .UserName }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
+		{{ if .URL }}<a href="{{ .URL }}">{{ $lead }}</a> &nbsp;
+		{{- else }}{{ $lead }} &nbsp;
+		{{- end }}
+
+		{{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
+
+		{{- with .Attachments }}<br>
+		{{ range . }}
+			{{- if eq .Type "image" }}<img src="{{ .URL | safe }}">
+			
+			{{- else }}{{/* "text" */}}
+			<blockquote>{{ .Text | compact | max 800 | nl2br }}
+				{{- with .Attachments }}<br>
+				{{ range . }}{{- if eq .Type "image" }}<img src="{{ .URL | safe }}">{{ end }}{{ end }}
+				{{ end }}
+			</blockquote>
+			{{ end }}
+		{{- end }}
+		{{- end }}
+	</div>
+
 {{- end }}
 `
 
