@@ -17,18 +17,16 @@ import (
 	"github.com/tomill/centre/message"
 )
 
-var GmailDomain = "gmail.com"
-
 type Gmail struct {
-	account     string
+	email       string
 	appPassword string
 }
 
-func GmailFlusher(c config.Config) Flusher {
+func GmailFlusher(c config.Config) (Flusher, error) {
 	return &Gmail{
-		account:     c.GmailAccount,
+		email:       c.GmailAddress.Address,
 		appPassword: c.GmailAppPassword,
-	}
+	}, nil
 }
 
 func (p Gmail) Flush(timeline message.Timeline) error {
@@ -37,12 +35,17 @@ func (p Gmail) Flush(timeline message.Timeline) error {
 		return err
 	}
 
-	addr := fmt.Sprintf("%s+%s@%s", p.account, timeline.Source, GmailDomain)
+	atIndex := strings.LastIndexByte(p.email, '@')
+
+	username := p.email[:atIndex]
+	domain := p.email[atIndex+1:]
+
+	addr := fmt.Sprintf("%s+%s@%s", username, timeline.Source, domain)
 	msg := &email.Email{
 		To:   []string{addr},
 		From: fmt.Sprintf("%s <%s>", timeline.Source, addr),
 		Headers: textproto.MIMEHeader{
-			"References": []string{fmt.Sprintf("<%s+%s-%s-centre@%s>", p.account, timeline.Subject, timeline.RefID, GmailDomain)},
+			"References": []string{fmt.Sprintf("<%s+%s-%s-centre@%s>", username, timeline.Subject, timeline.RefID, domain)},
 		},
 		Subject: timeline.Subject,
 		HTML:    []byte(body),
@@ -56,7 +59,7 @@ func (p Gmail) Flush(timeline message.Timeline) error {
 
 	err = msg.Send(
 		"smtp.gmail.com:587",
-		smtp.PlainAuth("", p.account+"@"+GmailDomain, p.appPassword, "smtp.gmail.com"),
+		smtp.PlainAuth("", username+"@"+domain, p.appPassword, "smtp.gmail.com"),
 	)
 	if err != nil {
 		return fmt.Errorf("mail send error error: %w", err)
@@ -118,7 +121,7 @@ div blockquote {
 		{{- with .Attachments }}<br>
 		{{ range . }}
 			{{- if eq .Type "image" }}<img src="{{ .URL | safe }}">
-			
+
 			{{- else }}{{/* "text" */}}
 			<blockquote>{{ .Text | compact | max 800 | nl2br }}
 				{{- with .Attachments }}<br>

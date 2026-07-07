@@ -6,9 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"runtime/debug"
-	"time"
 
-	"github.com/golobby/container/v3"
 	"github.com/phsym/console-slog"
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/input"
@@ -16,27 +14,31 @@ import (
 )
 
 func main() {
-	if os.Getenv("LOG_FORMAT") == "json" {
-		slog.SetDefault(slog.New(
-			slog.NewJSONHandler(os.Stderr, nil),
-		))
-	} else {
-		slog.SetDefault(slog.New(
-			console.NewHandler(os.Stderr, nil),
-		))
-	}
-
-	var msg string
 	defer func() {
 		if err := recover(); err != nil {
-			log.Fatalf("[ERROR] panic: centre %s error: %s\n%s", msg, err, debug.Stack())
+			slog.Error(err.(error).Error(), "stack", string(debug.Stack()))
+			os.Exit(1)
 		}
 	}()
 
-	con := container.New()
-	container.MustSingleton(con, config.GetOptions)
+	conf := config.GetOptions()
 
-	for name, fn := range map[string]func(config.Config) (input.Fetcher, error){
+	var logger slog.Handler
+	if conf.LogFormat == "json" {
+		logger = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: conf.LogLevel})
+	} else {
+		logger = console.NewHandler(os.Stderr, &console.HandlerOptions{Level: conf.LogLevel})
+	}
+	slog.SetDefault(slog.New(logger))
+
+	if err := run(conf); err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+}
+
+func run(c config.Config) error {
+	fetcher, ok := map[string]func(config.Config) (input.Fetcher, error){
 		"dummy":    input.DummyFetcher,
 		"stdin":    input.StdinFetcher,
 		"feed":     input.FeedFetcher,
@@ -45,38 +47,40 @@ func main() {
 		"bluesky":  input.BlueskyFetcher,
 		"slack":    input.SlackFetcher,
 		"discord":  input.DiscordFetcher,
-	} {
-		container.MustNamedTransientLazy(con, name, fn)
+	}[c.Input]
+	if !ok {
+		return fmt.Errorf("invalid --in: %s", c.Input)
 	}
-	for name, fn := range map[string]func(config.Config) output.Flusher{
+
+	flusher, ok := map[string]func(config.Config) (output.Flusher, error){
 		"json":  output.JSONFlusher,
 		"gmail": output.GmailFlusher,
-	} {
-		container.MustNamedTransientLazy(con, name, fn)
+	}[c.Output]
+	if !ok {
+		return fmt.Errorf("invalid --out: %s", c.Output)
 	}
 
-	container.MustCall(con, func(c config.Config) error {
-		msg = fmt.Sprintf("--in %s --out %s --since '%s' --until '%s'", c.Input, c.Output,
-			c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339))
+	in, err := fetcher(c)
+	if err != nil {
+		return err
+	}
 
-		log.Printf("initialising %s", msg)
+	out, err := flusher(c)
+	if err != nil {
+		return err
+	}
 
-		var in input.Fetcher
-		var out output.Flusher
-		container.MustNamedResolve(con, &in, c.Input)
-		container.MustNamedResolve(con, &out, c.Output)
+	log.Printf("plago %s", &c.ExecParams)
+	timeline, err := in.Fetch()
+	if err != nil {
+		return err
+	}
 
-		timeline, err := in.Fetch()
-		if err != nil {
-			return err
-		}
+	log.Printf("data fetched from %s %d line(s).", c.Input, len(timeline.Messages))
+	if len(timeline.Messages) == 0 {
+		return nil
+	}
 
-		if len(timeline.Messages) == 0 {
-			log.Printf("fetched no data from %s. quit.", c.Input)
-			return nil
-		}
-
-		log.Printf("data fetched from %s %d line(s). flush to %s ...", c.Input, len(timeline.Messages), c.Output)
-		return out.Flush(timeline)
-	})
+	log.Printf("flush to %s ...", c.Output)
+	return out.Flush(timeline)
 }

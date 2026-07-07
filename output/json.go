@@ -12,13 +12,13 @@ type JSON struct {
 	json *json.Encoder
 }
 
-func JSONFlusher(c config.Config) Flusher {
+func JSONFlusher(c config.Config) (Flusher, error) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetEscapeHTML(false)
 
 	return &JSON{
 		json: enc,
-	}
+	}, nil
 }
 
 func (p JSON) Flush(timeline message.Timeline) error {
