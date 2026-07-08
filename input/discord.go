@@ -29,7 +29,7 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 	p := &Discord{
 		ExecParams: c.ExecParams,
 		client:     lo.Must(discordgo.New(c.DiscordToken)),
-		channels:   config.MustGetSheetValues[DiscordChannel](c.SheetCredentials, c.SheetID, "discord.channels"),
+		channels:   config.MustGetSheetValues[DiscordChannel](c.DiscordChannelSheet),
 		users:      newMemomap[string](),
 	}
 
