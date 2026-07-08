@@ -76,8 +76,8 @@ func run(c config.Config) error {
 		return err
 	}
 
-	log.Printf("data fetched from %s %d line(s).", c.Input, len(timeline.Messages))
-	if len(timeline.Messages) == 0 {
+	log.Printf("data fetched from %s %d line(s).", c.Input, len(timeline.Entries))
+	if len(timeline.Entries) == 0 {
 		return nil
 	}
 

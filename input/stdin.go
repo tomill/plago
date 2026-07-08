@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/tomill/centre/config"
-	"github.com/tomill/centre/message"
+	"github.com/tomill/centre/entry"
 )
 
 type Stdin struct {
@@ -21,8 +21,8 @@ func StdinFetcher(c config.Config) (Fetcher, error) {
 	return &Stdin{c.ExecParams}, nil
 }
 
-func (p Stdin) Fetch() (message.Timeline, error) {
-	var timeline message.Timeline
+func (p Stdin) Fetch() (entry.Timeline, error) {
+	var timeline entry.Timeline
 
 	dec := json.NewDecoder(os.Stdin)
 	err := dec.Decode(&timeline)

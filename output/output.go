@@ -1,9 +1,9 @@
 package output
 
 import (
-	"github.com/tomill/centre/message"
+	"github.com/tomill/centre/entry"
 )
 
 type Flusher interface {
-	Flush(message.Timeline) error
+	Flush(entry.Timeline) error
 }

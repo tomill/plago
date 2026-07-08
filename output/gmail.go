@@ -14,7 +14,7 @@ import (
 	"github.com/aymerick/douceur/inliner"
 	"github.com/jordan-wright/email"
 	"github.com/tomill/centre/config"
-	"github.com/tomill/centre/message"
+	"github.com/tomill/centre/entry"
 )
 
 type Gmail struct {
@@ -29,7 +29,7 @@ func GmailFlusher(c config.Config) (Flusher, error) {
 	}, nil
 }
 
-func (p Gmail) Flush(timeline message.Timeline) error {
+func (p Gmail) Flush(timeline entry.Timeline) error {
 	body, err := p.html(timeline)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (p Gmail) Flush(timeline message.Timeline) error {
 	return nil
 }
 
-func (p Gmail) html(timeline message.Timeline) (string, error) {
+func (p Gmail) html(timeline entry.Timeline) (string, error) {
 	body := `
 <style>
 h2 {
@@ -98,7 +98,7 @@ div blockquote {
 
 {{- $section := "" }}
 {{- $channel := "" }}
-{{- range .Messages }}
+{{- range .Entries }}
 
 	{{- if ne $section .Section }}
 	{{ if .Section }}<h2>{{ .Section }}</h2>{{ end }}
@@ -117,18 +117,18 @@ div blockquote {
 		{{- end }}
 
 		{{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
+		
+		{{- with .Images }}<br>
+		{{ range . }}<img src="{{ . | safe }}">{{ end }}
+		{{- end }}
 
 		{{- with .Attachments }}<br>
 		{{ range . }}
-			{{- if eq .Type "image" }}<img src="{{ .URL | safe }}">
-
-			{{- else }}{{/* "text" */}}
 			<blockquote>{{ .Text | compact | max 800 | nl2br }}
-				{{- with .Attachments }}<br>
-				{{ range . }}{{- if eq .Type "image" }}<img src="{{ .URL | safe }}">{{ end }}{{ end }}
+				{{- with .Images }}<br>
+				{{ range . }}<img src="{{ . | safe }}">{{ end }}
 				{{ end }}
 			</blockquote>
-			{{ end }}
 		{{- end }}
 		{{- end }}
 	</div>

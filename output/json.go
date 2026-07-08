@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/tomill/centre/config"
-	"github.com/tomill/centre/message"
+	"github.com/tomill/centre/entry"
 )
 
 type JSON struct {
@@ -21,6 +21,6 @@ func JSONFlusher(c config.Config) (Flusher, error) {
 	}, nil
 }
 
-func (p JSON) Flush(timeline message.Timeline) error {
+func (p JSON) Flush(timeline entry.Timeline) error {
 	return p.json.Encode(timeline)
 }

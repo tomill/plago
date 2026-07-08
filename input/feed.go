@@ -10,7 +10,7 @@ import (
 	"github.com/dghubble/sling"
 
 	"github.com/tomill/centre/config"
-	"github.com/tomill/centre/message"
+	"github.com/tomill/centre/entry"
 )
 
 // Feed https://github.com/theoldreader/api
@@ -35,8 +35,8 @@ var imgURLRe = regexp.MustCompile(`<img\s+[^>]*src="https?://([^"]+)"`)
 var bookTitleRe = regexp.MustCompile(`^(.+?):(.+?)` +
 	`(KADOKAWA|スターツ出版|ハーパーコリンズ・ジャパン|マイナビ出版|中央公論新社|光文社|原書房|双葉社|宝島社|実業之日本社|小学館|幻冬舎|幻冬舎コミックス|徳間書店|文藝春秋|新潮社|早川書房|星海社|東京創元社|祥伝社|筑摩書房|角川|論創社|講談社|集英社)$`)
 
-func (p Feed) Fetch() (message.Timeline, error) {
-	timeline := message.Timeline{
+func (p Feed) Fetch() (entry.Timeline, error) {
+	timeline := entry.Timeline{
 		Source:  "feed",
 		RefID:   "feed",
 		Subject: p.since.Format(time.DateOnly),
@@ -89,43 +89,37 @@ func (p Feed) Fetch() (message.Timeline, error) {
 	}
 
 	for _, item := range contentsResponse.Items {
-		msg := &message.Message{
+		e := &entry.Entry{
 			UserName:  item.Origin.Title,
 			URL: item.Canonical[0].Href,
 			Text:      item.Title,
 		}
 		for _, tag := range item.Categories {
 			if strings.HasPrefix(tag, "user/-/label/") {
-				msg.Channel = strings.Replace(tag, "user/-/label/", "", 1)
+				e.Channel = strings.Replace(tag, "user/-/label/", "", 1)
 			}
 		}
 
 		if m := imgURLRe.FindStringSubmatch(item.Summary.Content); len(m) > 0 {
-			msg.AddAttachment(message.Message{
-				Type:      message.TypeImage,
-				URL: `https://` + m[1],
-			})
+			e.AddImage(`https://` + m[1])
 		}
 
 		for _, enclosure := range item.Enclosure {
 			if strings.HasPrefix(enclosure.Type, "image/") {
-				msg.AddAttachment(message.Message{
-					Type:      message.TypeImage,
-					URL: enclosure.URL,
-				})
+				e.AddImage(enclosure.URL)
 			}
 		}
 
-		if strings.HasPrefix(msg.URL, "https://mysterynavi.com/") {
-			if m := bookTitleRe.FindStringSubmatch(msg.Text); len(m) > 0 {
-				msg.Text = fmt.Sprintf(`%s / %s （%s）`, m[2], m[1], m[3])
+		if strings.HasPrefix(e.URL, "https://mysterynavi.com/") {
+			if m := bookTitleRe.FindStringSubmatch(e.Text); len(m) > 0 {
+				e.Text = fmt.Sprintf(`%s / %s （%s）`, m[2], m[1], m[3])
 			}
 		}
 
-		timeline.Append(msg)
+		timeline.Append(e)
 	}
 
-	if len(timeline.Messages) > 0 {
+	if len(timeline.Entries) > 0 {
 		query := list.AsContentsQuery()
 		query.Action = "user/-/state/com.google/read"
 		req := p.client.New().Post("reader/api/0/edit-tag").BodyForm(query)

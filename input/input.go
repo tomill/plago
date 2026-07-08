@@ -1,9 +1,9 @@
 package input
 
 import (
-	"github.com/tomill/centre/message"
+	"github.com/tomill/centre/entry"
 )
 
 type Fetcher interface {
-	Fetch() (message.Timeline, error)
+	Fetch() (entry.Timeline, error)
 }
