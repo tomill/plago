@@ -13,6 +13,7 @@ import (
 
 	"github.com/aymerick/douceur/inliner"
 	"github.com/jordan-wright/email"
+	"github.com/mattn/go-runewidth"
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/entry"
 )
@@ -36,7 +37,6 @@ func (p Gmail) Flush(timeline entry.Timeline) error {
 	}
 
 	atIndex := strings.LastIndexByte(p.email, '@')
-
 	username := p.email[:atIndex]
 	domain := p.email[atIndex+1:]
 
@@ -45,7 +45,7 @@ func (p Gmail) Flush(timeline entry.Timeline) error {
 		To:   []string{addr},
 		From: fmt.Sprintf("%s <%s>", timeline.Source, addr),
 		Headers: textproto.MIMEHeader{
-			"References": []string{fmt.Sprintf("<%s+%s-%s-centre@%s>", username, timeline.Subject, timeline.RefID, domain)},
+			"References": []string{fmt.Sprintf("<%s+plago-%s-%s@%s>", username, timeline.Subject, timeline.RefID, domain)},
 		},
 		Subject: timeline.Subject,
 		HTML:    []byte(body),
@@ -112,19 +112,19 @@ div blockquote {
 
 	<div>
 		{{- $lead := .UserName }}{{ if not .UserName }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
-		{{ if .URL }}<a href="{{ .URL }}">{{ $lead }}</a> &nbsp;
+		{{ if .URL }}<a href="{{ .URL }}">{{ $lead | max 18 }}</a> &nbsp;
 		{{- else }}{{ $lead }} &nbsp;
 		{{- end }}
 
 		{{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
-		
+
 		{{- with .Images }}<br>
 		{{ range . }}<img src="{{ . | safe }}">{{ end }}
 		{{- end }}
 
 		{{- with .Attachments }}<br>
 		{{ range . }}
-			<blockquote>{{ .Text | compact | max 800 | nl2br }}
+			<blockquote>{{ .Text | compact | max 400 | nl2br }}
 				{{- with .Images }}<br>
 				{{ range . }}<img src="{{ . | safe }}">{{ end }}
 				{{ end }}
@@ -147,11 +147,7 @@ div blockquote {
 				return text
 			},
 			"max": func(max int, text string) string {
-				if s := []rune(text); len(s) > max {
-					return string(s[:max]) + "..."
-				} else {
-					return text
-				}
+				return runewidth.Truncate(text, max, "…")
 			},
 			"nl2br": func(text string) template.HTML {
 				text = html.UnescapeString(text)

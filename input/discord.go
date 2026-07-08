@@ -15,7 +15,7 @@ type Discord struct {
 	config.ExecParams
 	client   *discordgo.Session
 	channels []DiscordChannel
-	users    *memomap[string]
+	users    *cache[string]
 }
 
 type DiscordChannel struct {
@@ -30,7 +30,7 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 		ExecParams: c.ExecParams,
 		client:     lo.Must(discordgo.New(c.DiscordToken)),
 		channels:   config.MustGetSheetValues[DiscordChannel](c.DiscordChannelSheet),
-		users:      newMemomap[string](),
+		users:      newCache[string](),
 	}
 
 	return p, nil
