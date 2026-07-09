@@ -45,7 +45,7 @@ func (p Gmail) Flush(timeline entry.Timeline) error {
 		To:   []string{addr},
 		From: fmt.Sprintf("%s <%s>", timeline.Source, addr),
 		Headers: textproto.MIMEHeader{
-			"References": []string{fmt.Sprintf("<%s+plago-%s-%s@%s>", username, timeline.Subject, timeline.RefID, domain)},
+			"References": []string{fmt.Sprintf("<%s+plago-%s%s@%s>", username, timeline.Subject, timeline.RefID, domain)},
 		},
 		Subject: timeline.Subject,
 		HTML:    []byte(body),

@@ -23,7 +23,7 @@ type Entry struct {
 	Reply       bool      `json:"reply,omitempty"`
 	Text        string    `json:"text,omitempty"`
 	Images      []string  `json:"images,omitempty"`
-	Attachments []Entry   `json:"attachments,omitempty"`
+	Attachments []*Entry  `json:"attachments,omitempty"`
 }
 
 func NewTimeline(c config.ExecParams) Timeline {
@@ -64,6 +64,7 @@ func (e *Entry) AddImage(url string) {
 	e.Images = append(e.Images, url)
 }
 
-func (e *Entry) AddAttachment(v Entry) {
-	e.Attachments = append(e.Attachments, v)
+func (e *Entry) AddAttachment(a Entry) *Entry {
+	e.Attachments = append(e.Attachments, &a)
+	return &a
 }
