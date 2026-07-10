@@ -68,3 +68,11 @@ func (e *Entry) AddAttachment(a Entry) *Entry {
 	e.Attachments = append(e.Attachments, &a)
 	return &a
 }
+
+func Error(err error) *Entry {
+	return &Entry{
+		Channel:   "Error",
+		Timestamp: time.Now(),
+		Text:      err.Error(),
+	}
+}

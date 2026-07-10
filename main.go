@@ -70,7 +70,7 @@ func run(c config.Config) error {
 		return err
 	}
 
-	log.Printf("plago %s", &c.ExecParams)
+	log.Printf("plago %s", c.ExecParams)
 	timeline, err := in.Fetch()
 	if err != nil {
 		return err
