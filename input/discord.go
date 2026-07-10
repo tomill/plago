@@ -13,9 +13,10 @@ import (
 
 type Discord struct {
 	config.ExecParams
-	client   *discordgo.Session
-	channels []DiscordChannel
-	users    *cache[string]
+	client *discordgo.Session
+	target []DiscordChannel
+	guilds *cache[string]
+	users  *cache[string]
 }
 
 type DiscordChannel struct {
@@ -29,7 +30,8 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 	p := &Discord{
 		ExecParams: c.ExecParams,
 		client:     lo.Must(discordgo.New(c.DiscordToken)),
-		channels:   config.MustGetSheetValues[DiscordChannel](c.DiscordChannelSheet),
+		target:     config.MustGetSheetValues[DiscordChannel](c.DiscordChannelSheet),
+		guilds:     newCache[string](),
 		users:      newCache[string](),
 	}
 
@@ -39,7 +41,7 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 func (p Discord) Fetch() (entry.Timeline, error) {
 	timeline := entry.NewTimeline(p.ExecParams)
 
-	for _, ch := range p.channels {
+	for _, ch := range p.target {
 		messages, err := p.client.ChannelMessages(ch.ChannelID, 100, "", "", "")
 		if err != nil {
 			return timeline, err
@@ -62,13 +64,20 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *entry.Entry 
 		return nil
 	}
 
+	// ch2, err := p.client.Channel(post.ChannelID)
+	// fmt.Fprintf(os.Stderr, "--\n%#v\n", ch2)
+	// fmt.Fprintf(os.Stderr, "--\n%#v\n", err)
+	// gild, err := p.client.Guild(ch2.GuildID)
+	// fmt.Fprintf(os.Stderr, "--\n%#v\n", gild)
+	// return nil
+
 	e := &entry.Entry{
-		Timestamp: ts,
 		Section:   ts.Format("2006-01-02 15:00"),
 		Channel:   fmt.Sprintf("[%s] %s", ch.ServerName, ch.ChannelName),
+		Timestamp: ts,
 		URL:       fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, post.ChannelID, post.ID),
 		Reply:     post.ReferencedMessage != nil,
-		UserName: p.users.get(ch.ServerID+post.Author.ID, func() string {
+		User: p.users.get(ch.ServerID+post.Author.ID, func() string {
 			member, err := p.client.GuildMember(ch.ServerID, post.Author.ID)
 			if err == nil && member.Nick != "" {
 				return member.Nick
@@ -103,7 +112,7 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *entry.Entry 
 
 	for _, v := range post.Embeds {
 		e.AddAttachment(entry.Entry{
-			Text: strings.Join([]string{v.Author.Name, v.Title, markdownUnescape(v.Description)}, "\n"),
+			Text: strings.Join([]string{v.Title, markdownUnescape(v.Description)}, "\n"),
 		})
 
 		if v.Image != nil {
@@ -114,4 +123,20 @@ func (p Discord) build(ch DiscordChannel, post *discordgo.Message) *entry.Entry 
 	}
 
 	return e
+}
+
+func (p Discord) name(sid, uid string) string {
+	return p.users.get(sid+uid, func() string {
+		member, err := p.client.GuildMember(sid, uid)
+		if err == nil && member.Nick != "" {
+			return member.Nick
+		}
+
+		user, err := p.client.User(uid)
+		if err == nil {
+			return user.DisplayName()
+		}
+
+		return fmt.Sprintf("<%s>", uid)
+	})
 }

@@ -90,7 +90,7 @@ func (p Feed) Fetch() (entry.Timeline, error) {
 
 	for _, item := range contentsResponse.Items {
 		e := &entry.Entry{
-			UserName:  item.Origin.Title,
+			User:  item.Origin.Title,
 			URL: item.Canonical[0].Href,
 			Text:      item.Title,
 		}

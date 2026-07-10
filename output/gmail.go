@@ -111,7 +111,7 @@ div blockquote {
 	{{- $channel = .Channel }}
 
 	<div>
-		{{- $lead := .UserName }}{{ if not .UserName }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
+		{{- $lead := .User }}{{ if not .User }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
 		{{ if .URL }}<a href="{{ .URL }}">{{ $lead | max 18 }}</a> &nbsp;
 		{{- else }}{{ $lead }} &nbsp;
 		{{- end }}

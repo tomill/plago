@@ -19,7 +19,7 @@ type Entry struct {
 	Channel     string    `json:"channel,omitempty"`
 	Timestamp   time.Time `json:"timestamp,omitzero"`
 	URL         string    `json:"url,omitempty"`
-	UserName    string    `json:"username,omitempty"`
+	User        string    `json:"user,omitempty"`
 	Reply       bool      `json:"reply,omitempty"`
 	Text        string    `json:"text,omitempty"`
 	Images      []string  `json:"images,omitempty"`
