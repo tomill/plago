@@ -66,7 +66,7 @@ func (p Discord) build(post *discordgo.Message) *entry.Entry {
 
 	e := &entry.Entry{
 		Section:   ts.Format("2006-01-02 15:00"),
-		Channel:   fmt.Sprintf("[%s] %s", ch.ServerName, ch.ChannelName),
+		Channel:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
 		Timestamp: ts,
 		URL:       fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, ch.ChannelID, post.ID),
 		Reply:     post.ReferencedMessage != nil,
