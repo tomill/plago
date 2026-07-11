@@ -43,6 +43,7 @@ func run(c config.Config) error {
 		"stdin":    input.StdinFetcher,
 		"feed":     input.FeedFetcher,
 		"twitter":  input.TwitterFetcher,
+		"twlist":   input.TwListFetcher,
 		"togetter": input.TogetterFetcher,
 		"bluesky":  input.BlueskyFetcher,
 		"slack":    input.SlackFetcher,

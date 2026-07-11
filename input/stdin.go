@@ -23,9 +23,6 @@ func StdinFetcher(c config.Config) (Fetcher, error) {
 
 func (p Stdin) Fetch() (entry.Timeline, error) {
 	var timeline entry.Timeline
-
-	dec := json.NewDecoder(os.Stdin)
-	err := dec.Decode(&timeline)
-
+	err := json.NewDecoder(os.Stdin).Decode(&timeline)
 	return timeline, err
 }

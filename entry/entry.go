@@ -40,6 +40,14 @@ func (t *Timeline) Append(entry *Entry) {
 	}
 }
 
+func (t *Timeline) AppendError(err error) {
+	t.Entries = append(t.Entries, Entry{
+		Channel:   "Error",
+		Timestamp: time.Now(),
+		Text:      err.Error(),
+	})
+}
+
 func (t *Timeline) Sorted() Timeline {
 	sort.Slice(t.Entries, func(i, j int) bool {
 		e1, e2 := t.Entries[i], t.Entries[j]
@@ -67,12 +75,4 @@ func (e *Entry) AddImage(url string) {
 func (e *Entry) AddAttachment(a Entry) *Entry {
 	e.Attachments = append(e.Attachments, &a)
 	return &a
-}
-
-func Error(err error) *Entry {
-	return &Entry{
-		Channel:   "Error",
-		Timestamp: time.Now(),
-		Text:      err.Error(),
-	}
 }

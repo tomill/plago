@@ -31,8 +31,8 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 		ExecParams: c.ExecParams,
 		client:     lo.Must(discordgo.New(c.DiscordToken)),
 		target:     c.DiscordChannels,
-		channels:   newCache[DiscordChannel](),
-		users:      newCache[string](),
+		channels:   &cache[DiscordChannel]{},
+		users:      &cache[string]{},
 	}
 
 	p.client.Client = httpClient
@@ -45,7 +45,7 @@ func (p Discord) Fetch() (entry.Timeline, error) {
 	for _, channelID := range p.target {
 		messages, err := p.client.ChannelMessages(channelID, 100, "", "", "")
 		if err != nil {
-			timeline.Append(entry.Error(err))
+			timeline.AppendError(err)
 			continue
 		}
 		for _, v := range messages {
@@ -66,7 +66,7 @@ func (p Discord) build(post *discordgo.Message) *entry.Entry {
 
 	e := &entry.Entry{
 		Section:   ts.Format("2006-01-02 15:00"),
-		Channel:   fmt.Sprintf("%s #%s", ch.ServerName, ch.ChannelName),
+		Channel:   fmt.Sprintf("%s %s", ch.ServerName, ch.ChannelName),
 		Timestamp: ts,
 		URL:       fmt.Sprintf("https://discord.com/channels/%s/%s/%s", ch.ServerID, ch.ChannelID, post.ID),
 		Reply:     post.ReferencedMessage != nil,
@@ -112,7 +112,7 @@ func (p Discord) channel(cid string) DiscordChannel {
 			return ch
 		}
 
-		ch.ChannelName = channel.Name
+		ch.ChannelName = "#" + channel.Name
 		ch.ServerID = channel.GuildID
 
 		server, err := p.client.Guild(channel.GuildID)
