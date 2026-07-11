@@ -16,9 +16,7 @@ func JSONFlusher(c config.Config) (Flusher, error) {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetEscapeHTML(false)
 
-	return &JSON{
-		json: enc,
-	}, nil
+	return &JSON{enc}, nil
 }
 
 func (p JSON) Flush(timeline entry.Timeline) error {
