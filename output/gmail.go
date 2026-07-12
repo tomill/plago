@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"log/slog"
 	"net/smtp"
 	"net/textproto"
-	"os"
 	"regexp"
 	"strings"
 	"unicode"
@@ -19,14 +19,14 @@ import (
 )
 
 type Gmail struct {
-	email       string
-	appPassword string
+	address  string
+	password string
 }
 
 func GmailFlusher(c config.Config) (Flusher, error) {
 	return &Gmail{
-		email:       c.GmailAddress.Address,
-		appPassword: c.GmailAppPassword,
+		address:  c.GmailAddress.Address,
+		password: c.GmailAppPassword,
 	}, nil
 }
 
@@ -35,68 +35,57 @@ func (p Gmail) Flush(timeline entry.Timeline) error {
 		return nil
 	}
 
-	body, err := p.html(timeline)
+	body, err := p.body(timeline)
 	if err != nil {
 		return err
 	}
 
-	atIndex := strings.LastIndexByte(p.email, '@')
-	username := p.email[:atIndex]
-	domain := p.email[atIndex+1:]
-
-	addr := fmt.Sprintf("%s+%s@%s", username, timeline.Source, domain)
+	username, domain, _ := strings.Cut(p.address, "@")
+	to := fmt.Sprintf("%s+%s@%s", username, timeline.Source, domain)
 	msg := &email.Email{
-		To:   []string{addr},
-		From: fmt.Sprintf("%s <%s>", timeline.Source, addr),
+		To:   []string{to},
+		From: fmt.Sprintf("%s <%s>", timeline.Source, to),
 		Headers: textproto.MIMEHeader{
-			"References": []string{fmt.Sprintf("<%s+plago-%s%s@%s>", username, timeline.Subject, timeline.RefID, domain)},
+			"References": []string{
+				fmt.Sprintf("<%s+plago-%s%s@%s>", username, timeline.Subject, timeline.RefID, domain),
+			},
 		},
 		Subject: timeline.Subject,
 		HTML:    []byte(body),
 	}
 
-	if os.Getenv("DEBUG") != "" {
-		fmt.Printf("--\n%#v\n", msg)
-		fmt.Println(body)
-		return nil
-	}
+	slog.Debug("", "body", body)
 
-	err = msg.Send(
+	return msg.Send(
 		"smtp.gmail.com:587",
-		smtp.PlainAuth("", username+"@"+domain, p.appPassword, "smtp.gmail.com"),
+		smtp.PlainAuth("", p.address, p.password, "smtp.gmail.com"),
 	)
-	if err != nil {
-		return fmt.Errorf("mail send error error: %w", err)
-	}
-
-	return nil
 }
 
-func (p Gmail) html(timeline entry.Timeline) (string, error) {
-	body := `
+var templateBody = `
 <style>
 h2 {
-  font-size: 1rem;
-  color: gray;
+ font-size: 1rem;
+ color: gray;
 }
 
 div {
-  margin: 0 0 0.4em;
-  color: #222;
+ margin: 0 0 0.4em;
+ color: #222;
 }
 
 div img {
-  height: 80px;
-  max-width: 200px;
-  margin: 5px 10px 0 0;
-  border-radius: 3px;
+ height: 80px;
+ max-width: 200px;
+ margin: 5px 10px 0 0;
+ border-radius: 3px;
 }
 
 div blockquote {
-  color: gray;
-  border-left: 2px solid silver;
-  margin: 3px 0 0 0;
-  padding: 1px .5rem;
+ color: gray;
+ border-left: 2px solid silver;
+ margin: 3px 0 0 0;
+ padding: 1px .5rem;
 }
 </style>
 
@@ -140,34 +129,33 @@ div blockquote {
 {{- end }}
 `
 
+var (
+	reEmptyLines = regexp.MustCompile(`\s*\n\s*\n`)
+)
+
+func (p Gmail) body(timeline entry.Timeline) (string, error) {
+	tmpl := template.New("body").Funcs(template.FuncMap{
+		"max": func(max int, text string) string {
+			return runewidth.Truncate(text, max, "…")
+		},
+		"compact": func(text string) string {
+			text = reEmptyLines.ReplaceAllString(text, "\n")
+			text = strings.TrimRightFunc(text, unicode.IsSpace)
+			return text
+		},
+		"nl2br": func(text string) template.HTML {
+			text = html.UnescapeString(text)
+			text = template.HTMLEscapeString(text)
+			text = strings.ReplaceAll(text, "\n", "<br>\n")
+			return template.HTML(text)
+		},
+		"safe": func(s string) template.URL {
+			return template.URL(s)
+		},
+	})
+
 	var buff strings.Builder
-	err := template.Must(template.New("body").
-		Funcs(template.FuncMap{
-			"compact": func(text string) string {
-				text = regexp.MustCompile(`\s*\n\s*\n`).ReplaceAllString(text, "\n")
-				text = strings.TrimRightFunc(text, func(c rune) bool {
-					return unicode.IsSpace(c) || c == '\r' || c == '\n'
-				})
-				return text
-			},
-			"max": func(max int, text string) string {
-				return runewidth.Truncate(text, max, "…")
-			},
-			"nl2br": func(text string) template.HTML {
-				text = html.UnescapeString(text)
-				text = template.HTMLEscapeString(text)
-				text = regexp.MustCompile(`(?m)^(\s+)`).ReplaceAllStringFunc(text, func(s string) string {
-					return strings.Repeat("&nbsp;", len(s))
-				})
-				text = strings.ReplaceAll(text, "\n", "<br>\n")
-				return template.HTML(text)
-			},
-			"safe": func(s string) template.URL {
-				return template.URL(s)
-			},
-		}).
-		Parse(body)).
-		Execute(&buff, timeline)
+	err := template.Must(tmpl.Parse(templateBody)).Execute(&buff, timeline)
 	if err != nil {
 		return "", err
 	}
