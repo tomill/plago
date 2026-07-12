@@ -7,7 +7,6 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/phsym/console-slog"
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/input"
 	"github.com/tomill/centre/output"
@@ -22,14 +21,6 @@ func main() {
 	}()
 
 	conf := config.GetOptions()
-
-	var logger slog.Handler
-	if conf.LogFormat == "json" {
-		logger = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: conf.LogLevel})
-	} else {
-		logger = console.NewHandler(os.Stderr, &console.HandlerOptions{Level: conf.LogLevel})
-	}
-	slog.SetDefault(slog.New(logger))
 
 	if err := run(conf); err != nil {
 		slog.Error(err.Error())
@@ -77,11 +68,6 @@ func run(c config.Config) error {
 		return err
 	}
 
-	log.Printf("data fetched from %s %d line(s).", c.Input, len(timeline.Entries))
-	if len(timeline.Entries) == 0 {
-		return nil
-	}
-
-	log.Printf("flush to %s ...", c.Output)
+	log.Printf("plago fetched %d entries from %s. flushes them to %s ...", len(timeline.Entries), c.Input, c.Output)
 	return out.Flush(timeline)
 }

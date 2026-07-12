@@ -31,6 +31,10 @@ func GmailFlusher(c config.Config) (Flusher, error) {
 }
 
 func (p Gmail) Flush(timeline entry.Timeline) error {
+	if len(timeline.Entries) == 0 {
+		return nil
+	}
+
 	body, err := p.html(timeline)
 	if err != nil {
 		return err

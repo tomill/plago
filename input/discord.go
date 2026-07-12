@@ -35,7 +35,6 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 		users:      &cache[string]{},
 	}
 
-	p.client.Client = httpClient
 	return p, nil
 }
 
@@ -43,7 +42,7 @@ func (p Discord) Fetch() (entry.Timeline, error) {
 	timeline := entry.NewTimeline(p.ExecParams)
 
 	for _, channelID := range p.target {
-		messages, err := p.client.ChannelMessages(channelID, 100, "", "", "")
+		messages, err := p.client.ChannelMessages(channelID, 100, "", "", "", discordgo.WithClient(httpClient))
 		if err != nil {
 			timeline.AppendError(err)
 			continue
@@ -93,7 +92,7 @@ func (p Discord) build(post *discordgo.Message) *entry.Entry {
 
 	for _, v := range post.Embeds {
 		a := e.AddAttachment(entry.Entry{
-			Text: strings.Join([]string{v.Title, markdownUnescape(v.Description)}, "\n"),
+			Text: v.Title + "\n" + reMarkdownEscape.ReplaceAllString(v.Description, "$1"),
 		})
 		if v.Thumbnail != nil {
 			a.AddImage(v.Thumbnail.ProxyURL)

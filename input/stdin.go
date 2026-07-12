@@ -22,7 +22,11 @@ func StdinFetcher(c config.Config) (Fetcher, error) {
 }
 
 func (p Stdin) Fetch() (entry.Timeline, error) {
-	var timeline entry.Timeline
+	timeline := entry.Timeline{
+		Source:  "stdin",
+		Entries: make([]entry.Entry, 0),
+	}
+
 	err := json.NewDecoder(os.Stdin).Decode(&timeline)
 	return timeline, err
 }
