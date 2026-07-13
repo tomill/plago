@@ -109,7 +109,7 @@ div blockquote {
 		{{- else }}{{ $lead }} &nbsp;
 		{{- end }}
 
-		{{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
+		{{- if .Reply }}» {{ end }}{{ .Text | compact | max 500 | nl2br }}
 
 		{{- with .Images }}<br>
 		{{ range . }}<img src="{{ . | safe }}">{{ end }}
@@ -117,7 +117,7 @@ div blockquote {
 
 		{{- with .Attachments }}<br>
 		{{ range . }}
-			<blockquote>{{ .Text | compact | max 400 | nl2br }}
+			<blockquote>{{ .Text | compact | max 350 | nl2br }}
 				{{- with .Images }}<br>
 				{{ range . }}<img src="{{ . | safe }}">{{ end }}
 				{{ end }}
