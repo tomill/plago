@@ -30,15 +30,14 @@ func main() {
 
 func run(c config.Config) error {
 	fetcher, ok := map[string]func(config.Config) (input.Fetcher, error){
-		"dummy":    input.DummyFetcher,
-		"stdin":    input.StdinFetcher,
-		"feed":     input.FeedFetcher,
-		"twitter":  input.TwitterFetcher,
-		"twlist":   input.TwListFetcher,
-		"togetter": input.TogetterFetcher,
-		"bluesky":  input.BlueskyFetcher,
-		"slack":    input.SlackFetcher,
-		"discord":  input.DiscordFetcher,
+		"dummy":   input.DummyFetcher,
+		"stdin":   input.StdinFetcher,
+		"feed":    input.FeedFetcher,
+		"twitter": input.TwitterFetcher,
+		"twlist":  input.TwListFetcher,
+		"bluesky": input.BlueskyFetcher,
+		"slack":   input.SlackFetcher,
+		"discord": input.DiscordFetcher,
 	}[c.Input]
 	if !ok {
 		return fmt.Errorf("invalid --in: %s", c.Input)

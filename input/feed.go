@@ -32,9 +32,6 @@ func FeedFetcher(c config.Config) (Fetcher, error) {
 
 var imgURLRe = regexp.MustCompile(`<img\s+[^>]*src="https?://([^"]+)"`)
 
-var bookTitleRe = regexp.MustCompile(`^(.+?):(.+?)` +
-	`(KADOKAWA|スターツ出版|ハーパーコリンズ・ジャパン|マイナビ出版|中央公論新社|光文社|原書房|双葉社|宝島社|実業之日本社|小学館|幻冬舎|幻冬舎コミックス|徳間書店|文藝春秋|新潮社|早川書房|星海社|東京創元社|祥伝社|筑摩書房|角川|論創社|講談社|集英社)$`)
-
 func (p Feed) Fetch() (entry.Timeline, error) {
 	timeline := entry.Timeline{
 		Source:  "feed",
@@ -90,9 +87,9 @@ func (p Feed) Fetch() (entry.Timeline, error) {
 
 	for _, item := range contentsResponse.Items {
 		e := &entry.Entry{
-			User:  item.Origin.Title,
-			URL: item.Canonical[0].Href,
-			Text:      item.Title,
+			User: item.Origin.Title,
+			URL:  item.Canonical[0].Href,
+			Text: item.Title,
 		}
 		for _, tag := range item.Categories {
 			if strings.HasPrefix(tag, "user/-/label/") {
@@ -107,12 +104,6 @@ func (p Feed) Fetch() (entry.Timeline, error) {
 		for _, enclosure := range item.Enclosure {
 			if strings.HasPrefix(enclosure.Type, "image/") {
 				e.AddImage(enclosure.URL)
-			}
-		}
-
-		if strings.HasPrefix(e.URL, "https://mysterynavi.com/") {
-			if m := bookTitleRe.FindStringSubmatch(e.Text); len(m) > 0 {
-				e.Text = fmt.Sprintf(`%s / %s （%s）`, m[2], m[1], m[3])
 			}
 		}
 
