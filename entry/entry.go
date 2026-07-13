@@ -1,6 +1,7 @@
 package entry
 
 import (
+	"runtime/debug"
 	"sort"
 	"time"
 
@@ -42,9 +43,10 @@ func (t *Timeline) Append(entry *Entry) {
 
 func (t *Timeline) AppendError(err error) {
 	t.Entries = append(t.Entries, Entry{
-		Channel:   "Error",
-		Timestamp: time.Now(),
-		Text:      err.Error(),
+		Channel:     "Error",
+		Timestamp:   time.Now(),
+		Text:        err.Error(),
+		Attachments: []*Entry{{Text: string(debug.Stack())}},
 	})
 }
 

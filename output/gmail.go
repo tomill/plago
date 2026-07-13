@@ -117,7 +117,7 @@ div blockquote {
 
 		{{- with .Attachments }}<br>
 		{{ range . }}
-			<blockquote>{{ .Text | compact | max 350 | nl2br }}
+			<blockquote>{{ .Text | compact | max 500 | nl2br }}
 				{{- with .Images }}<br>
 				{{ range . }}<img src="{{ . | safe }}">{{ end }}
 				{{ end }}
@@ -147,6 +147,7 @@ func (p Gmail) body(timeline entry.Timeline) (string, error) {
 			text = html.UnescapeString(text)
 			text = template.HTMLEscapeString(text)
 			text = strings.ReplaceAll(text, "\n", "<br>\n")
+			text = strings.ReplaceAll(text, "\t", "&nbsp;&nbsp;")
 			return template.HTML(text)
 		},
 		"safe": func(s string) template.URL {
