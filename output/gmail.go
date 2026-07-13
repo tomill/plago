@@ -130,7 +130,7 @@ div blockquote {
 `
 
 var (
-	reEmptyLines = regexp.MustCompile(`\s*\n\s*\n`)
+	reEmptyLines = regexp.MustCompile(`[\p{Z}\s]*\n[\p{Z}\s]*\n`)
 )
 
 func (p Gmail) body(timeline entry.Timeline) (string, error) {
