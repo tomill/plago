@@ -2,59 +2,62 @@ package input
 
 import (
 	"fmt"
-	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
-	"time"
-
-	"github.com/dghubble/sling"
 
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/entry"
+	"resty.dev/v3"
 )
 
-// Feed https://github.com/theoldreader/api
 type Feed struct {
-	since  time.Time
-	client *sling.Sling
+	config.ExecParams
+	client *resty.Client
 }
 
 func FeedFetcher(c config.Config) (Fetcher, error) {
 	p := &Feed{
-		since: c.Since,
-		client: sling.New().
-			Client(httpClient).
-			Base("https://theoldreader.comm/").
-			Set("Authorization", "GoogleLogin auth="+c.TheOldReaderToken),
+		ExecParams: c.ExecParams,
+		client: resty.NewWithClient(httpClient).
+			SetBaseURL("https://theoldreader.com/").
+			SetHeader("Authorization", "GoogleLogin auth="+c.FeedReaderToken),
 	}
 
 	return p, nil
 }
 
-var imgURLRe = regexp.MustCompile(`<img\s+[^>]*src="https?://([^"]+)"`)
+type feedItems struct {
+	ItemRefs []struct {
+		Id string `json:"id"`
+	} `json:"itemRefs"`
+}
+
+func (res feedItems) AsContentsQuery() url.Values {
+	v := url.Values{}
+	for _, id := range res.ItemRefs {
+		v.Add("i", "tag:google.com,2005:reader/item/"+id.Id) // id
+	}
+	return v
+}
 
 func (p Feed) Fetch() (entry.Timeline, error) {
-	timeline := entry.Timeline{
-		Source:  "feed",
-		RefID:   "feed",
-		Subject: p.since.Format(time.DateOnly),
-	}
+	timeline := entry.NewTimeline(p.ExecParams)
 
 	var list feedItems
 	{
-		query := struct {
-			Subscription string `url:"s,omitempty"`
-			Exclude      string `url:"xt,omitempty"`
-			Numbers      int    `url:"n,omitempty"`
-		}{
-			Subscription: "user/-/state/com.google/reading-list",
-			Exclude:      "user/-/state/com.google/read",
-			Numbers:      1000,
-		}
+		res, err := p.client.R().
+			SetQueryParams(map[string]string{
+				"output": "json",
+				"s":      "user/-/state/com.google/reading-list", // subscription
+				"xt":     "user/-/state/com.google/read",         // exclude
+				"n":      "1000",                                 // numbers
+			}).
+			SetResult(&list).
+			Get("reader/api/0/stream/items/ids")
 
-		req := p.client.New().Get("reader/api/0/stream/items/ids?output=json").QueryStruct(query)
-		if err := p.call(req, &list); err != nil {
-			return timeline, fmt.Errorf("theoldreader get unread items error: %w", err)
+		if err != nil || !res.IsStatusSuccess() {
+			return timeline, fmt.Errorf("get unread items error: %w (status: %s)", err, res.Status())
 		}
 	}
 
@@ -80,9 +83,13 @@ func (p Feed) Fetch() (entry.Timeline, error) {
 		} `json:"items"`
 	}
 	{
-		req := p.client.New().Post("reader/api/0/stream/items/contents?output=json").BodyForm(list.AsContentsQuery())
-		if err := p.call(req, &contentsResponse); err != nil {
-			return timeline, fmt.Errorf("theoldreader get item contents error: %w", err)
+		res, err := p.client.R().
+			SetQueryParam("output", "json").
+			SetFormDataFromValues(list.AsContentsQuery()).
+			SetResult(&contentsResponse).
+			Post("reader/api/0/stream/items/contents")
+		if err != nil || !res.IsStatusSuccess() {
+			return timeline, fmt.Errorf("get item contents error: %w (status: %s)", err, res.Status())
 		}
 	}
 
@@ -98,7 +105,7 @@ func (p Feed) Fetch() (entry.Timeline, error) {
 			}
 		}
 
-		if m := imgURLRe.FindStringSubmatch(item.Summary.Content); len(m) > 0 {
+		if m := reFirstImageURL.FindStringSubmatch(item.Summary.Content); len(m) > 0 {
 			e.AddImage(`https://` + m[1])
 		}
 
@@ -113,54 +120,18 @@ func (p Feed) Fetch() (entry.Timeline, error) {
 
 	if len(timeline.Entries) > 0 {
 		query := list.AsContentsQuery()
-		query.Action = "user/-/state/com.google/read"
-		req := p.client.New().Post("reader/api/0/edit-tag").BodyForm(query)
-		if err := p.call(req, nil); err != nil {
-			return timeline, fmt.Errorf("theoldreader mark as read error: %w", err)
+		query.Set("a", "user/-/state/com.google/read") // action
+		res, err := p.client.R().
+			SetFormDataFromValues(query).
+			Post("reader/api/0/edit-tag")
+		if err != nil || !res.IsStatusSuccess() {
+			return timeline, fmt.Errorf("mark as read error: %w (status: %s)", err, res.Status())
 		}
 	}
 
 	return timeline.Sorted(), nil
 }
 
-type feedItems struct {
-	ItemRefs []struct {
-		Id string `json:"id"`
-	} `json:"itemRefs"`
-}
-
-func (res feedItems) AsContentsQuery() struct {
-	Action string   `url:"a,omitempty"`
-	Ids    []string `url:"i,omitempty"`
-} {
-	var ids []string
-	for _, id := range res.ItemRefs {
-		ids = append(ids, "tag:google.com,2005:reader/item/"+id.Id)
-	}
-
-	return struct {
-		Action string   `url:"a,omitempty"`
-		Ids    []string `url:"i,omitempty"`
-	}{
-		Ids: ids,
-	}
-}
-
-func (p Feed) call(req *sling.Sling, v any) error {
-	var res *http.Response
-	var err error
-	if v == nil {
-		r, _ := req.Request()
-		res, err = http.DefaultClient.Do(r)
-	} else {
-		res, err = req.ReceiveSuccess(&v)
-	}
-
-	if err != nil {
-		return fmt.Errorf("theoldreader http call error: %w", err)
-	} else if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("request error: %s - %s", res.Request.URL.Path, res.Status)
-	}
-
-	return nil
-}
+var (
+	reFirstImageURL = regexp.MustCompile(`<img\s+[^>]*src="https?://([^"]+)"`)
+)
