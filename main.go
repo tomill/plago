@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime/debug"
 
+	"github.com/samber/lo"
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/input"
 	"github.com/tomill/centre/output"
@@ -20,35 +21,39 @@ func main() {
 		}
 	}()
 
-	conf := config.GetOptions()
+	c := config.GetOptions()
 
-	if err := run(conf); err != nil {
+	if err := run(c); err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 }
 
+var fetcherRegistry = map[string]func(config.Config) (input.Fetcher, error){
+	"dummy":   input.DummyFetcher,
+	"stdin":   input.StdinFetcher,
+	"feed":    input.FeedFetcher,
+	"twitter": input.TwitterFetcher,
+	"twlist":  input.TwListFetcher,
+	"bluesky": input.BlueskyFetcher,
+	"slack":   input.SlackFetcher,
+	"discord": input.DiscordFetcher,
+}
+
+var flusherRegistry = map[string]func(config.Config) (output.Flusher, error){
+	"json":  output.JSONFlusher,
+	"gmail": output.GmailFlusher,
+}
+
 func run(c config.Config) error {
-	fetcher, ok := map[string]func(config.Config) (input.Fetcher, error){
-		"dummy":   input.DummyFetcher,
-		"stdin":   input.StdinFetcher,
-		"feed":    input.FeedFetcher,
-		"twitter": input.TwitterFetcher,
-		"twlist":  input.TwListFetcher,
-		"bluesky": input.BlueskyFetcher,
-		"slack":   input.SlackFetcher,
-		"discord": input.DiscordFetcher,
-	}[c.Input]
+	fetcher, ok := fetcherRegistry[c.Input]
 	if !ok {
-		return fmt.Errorf("invalid --in: %s", c.Input)
+		return fmt.Errorf("invalid --in %q (available %v)", c.Input, lo.Keys(fetcherRegistry))
 	}
 
-	flusher, ok := map[string]func(config.Config) (output.Flusher, error){
-		"json":  output.JSONFlusher,
-		"gmail": output.GmailFlusher,
-	}[c.Output]
+	flusher, ok := flusherRegistry[c.Output]
 	if !ok {
-		return fmt.Errorf("invalid --out: %s", c.Output)
+		return fmt.Errorf("invalid --out %q (available %v)", c.Output, lo.Keys(flusherRegistry))
 	}
 
 	in, err := fetcher(c)

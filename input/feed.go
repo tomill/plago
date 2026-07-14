@@ -23,7 +23,8 @@ func FeedFetcher(c config.Config) (Fetcher, error) {
 	p := &Feed{
 		since: c.Since,
 		client: sling.New().
-			Base("https://theoldreader.com/").
+			Client(httpClient).
+			Base("https://theoldreader.comm/").
 			Set("Authorization", "GoogleLogin auth="+c.TheOldReaderToken),
 	}
 

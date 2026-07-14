@@ -1,7 +1,8 @@
 package entry
 
 import (
-	"runtime/debug"
+	"fmt"
+	"runtime"
 	"sort"
 	"time"
 
@@ -42,11 +43,13 @@ func (t *Timeline) Append(entry *Entry) {
 }
 
 func (t *Timeline) AppendError(err error) {
+	_, file, line, _ := runtime.Caller(1)
+
 	t.Entries = append(t.Entries, Entry{
 		Channel:     "Error",
 		Timestamp:   time.Now(),
 		Text:        err.Error(),
-		Attachments: []*Entry{{Text: string(debug.Stack())}},
+		Attachments: []*Entry{{Text: fmt.Sprintf("%s:%d", file, line)}},
 	})
 }
 
