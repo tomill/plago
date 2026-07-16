@@ -31,7 +31,7 @@ type Entry struct {
 func NewTimeline(c config.ExecParams) Timeline {
 	return Timeline{
 		Source:  c.Input,
-		Subject: c.Since.Format(time.DateOnly),
+		Subject: c.Subject,
 		RefID:   c.RefID,
 	}
 }

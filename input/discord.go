@@ -91,8 +91,12 @@ func (p Discord) build(post *discordgo.Message) *entry.Entry {
 	}
 
 	for _, v := range post.Embeds {
+		title := v.Title
+		if title == "" && v.Author != nil {
+			title = v.Author.Name
+		}
 		a := e.AddAttachment(entry.Entry{
-			Text: v.Title + "\n" + reMarkdownEscape.ReplaceAllString(v.Description, "$1"),
+			Text: title + "\n" + reMarkdownEscape.ReplaceAllString(v.Description, "$1"),
 		})
 		if v.Thumbnail != nil {
 			a.AddImage(v.Thumbnail.ProxyURL)
