@@ -11,11 +11,11 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/aymerick/douceur/inliner"
 	"github.com/jordan-wright/email"
 	"github.com/mattn/go-runewidth"
 	"github.com/tomill/centre/config"
 	"github.com/tomill/centre/entry"
+	"github.com/vanng822/go-premailer/premailer"
 )
 
 type Gmail struct {
@@ -69,19 +69,20 @@ h2 {
  color: gray;
 }
 
-div {
+div.entry {
  margin: 0 0 0.4em;
  color: #222;
 }
 
-div img {
- height: 80px;
- max-width: 200px;
- margin: 5px 10px 0 0;
- border-radius: 3px;
+div.thumb {
+  display: inline-block;
+  width: 150px;
+  height: 80px;
+  background: center / cover no-repeat;
+  border-radius: 3px;
 }
 
-div blockquote {
+blockquote {
  color: gray;
  border-left: 2px solid silver;
  margin: 3px 0 0 0;
@@ -103,7 +104,7 @@ div blockquote {
 	{{ end }}
 	{{- $channel = .Channel }}
 
-	<div>
+	<div class="entry">
 		{{- $lead := .User }}{{ if not .User }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
 		{{ if .URL }}<a href="{{ .URL }}">{{ $lead | max 18 }}</a> &nbsp;
 		{{- else }}{{ $lead }} &nbsp;
@@ -112,14 +113,14 @@ div blockquote {
 		{{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
 
 		{{- with .Images }}<br>
-		{{ range . }}<img src="{{ . | safe }}">{{ end }}
+		{{ range . }}<div class="thumb" style="background-image: url('{{ . | safe }}')"></div> {{ end }}
 		{{- end }}
 
 		{{- with .Attachments }}<br>
 		{{ range . }}
 			<blockquote>{{ .Text | compact | max 500 | nl2br }}
 				{{- with .Images }}<br>
-				{{ range . }}<img src="{{ . | safe }}">{{ end }}
+				{{ range . }}<div class="thumb" style="background-image: url('{{ . | safe }}')"></div> {{ end }}
 				{{ end }}
 			</blockquote>
 		{{- end }}
@@ -161,5 +162,11 @@ func (p Gmail) body(timeline entry.Timeline) (string, error) {
 		return "", err
 	}
 
-	return inliner.Inline(buff.String())
+	inliner, err := premailer.NewPremailerFromString(buff.String(), nil)
+	if err != nil {
+		return "", err
+	}
+
+	return inliner.Transform()
+	// return inliner.Inline(buff.String())
 }
