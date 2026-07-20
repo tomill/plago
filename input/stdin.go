@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tomill/centre/config"
-	"github.com/tomill/centre/entry"
+	"github.com/tomill/plago/config"
+	"github.com/tomill/plago/entry"
 )
 
 type Stdin struct {

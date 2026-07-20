@@ -7,26 +7,29 @@ import (
 	"log/slog"
 	"net/smtp"
 	"net/textproto"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"unicode"
 
 	"github.com/jordan-wright/email"
 	"github.com/mattn/go-runewidth"
-	"github.com/tomill/centre/config"
-	"github.com/tomill/centre/entry"
+	"github.com/tomill/plago/config"
+	"github.com/tomill/plago/entry"
 	"github.com/vanng822/go-premailer/premailer"
 )
 
 type Gmail struct {
-	address  string
-	password string
+	address      string
+	password     string
+	templateFile string
 }
 
 func GmailFlusher(c config.Config) (Flusher, error) {
 	return &Gmail{
-		address:  c.GmailAddress.Address,
-		password: c.GmailAppPassword,
+		address:      c.GmailAddress.Address,
+		password:     c.GmailAppPassword,
+		templateFile: c.GmailTemplateFile,
 	}, nil
 }
 
@@ -62,31 +65,89 @@ func (p Gmail) Flush(timeline entry.Timeline) error {
 	)
 }
 
-var templateBody = `
+var (
+	reEmptyLines = regexp.MustCompile(`[\p{Z}\s]*\n[\p{Z}\s]*\n`)
+)
+
+func (p Gmail) body(timeline entry.Timeline) (string, error) {
+	var buff strings.Builder
+	if err := p.template().Execute(&buff, timeline); err != nil {
+		return "", err
+	}
+
+	inliner, err := premailer.NewPremailerFromString(buff.String(), nil)
+	if err != nil {
+		return "", err
+	}
+
+	return inliner.Transform()
+}
+
+func (p Gmail) template() *template.Template {
+	funcs := template.FuncMap{
+		"max": func(max int, text string) string {
+			return runewidth.Truncate(text, max, "…")
+		},
+		"compact": func(text string) string {
+			text = reEmptyLines.ReplaceAllString(text, "\n")
+			text = strings.TrimRightFunc(text, unicode.IsSpace)
+			return text
+		},
+		"nl2br": func(text string) template.HTML {
+			text = html.UnescapeString(text)
+			text = template.HTMLEscapeString(text)
+			text = strings.ReplaceAll(text, "\n", "<br>\n")
+			text = strings.ReplaceAll(text, "\t", "&nbsp;&nbsp;")
+			return template.HTML(text)
+		},
+		"safe": func(s string) template.URL {
+			return template.URL(s)
+		},
+	}
+	if file := p.templateFile; file != "" {
+		base := filepath.Base(file)
+		return template.Must(template.New(base).Funcs(funcs).ParseFiles(p.templateFile))
+	} else {
+		return template.Must(template.New("body").Funcs(funcs).Parse(p.defaultTempalte()))
+	}
+}
+
+func (p Gmail) defaultTempalte() string {
+	return `
 <style>
 h2 {
- font-size: 1rem;
- color: gray;
+  font-size: 1rem;
+  color: gray;
 }
 
 div.entry {
- margin: 0 0 0.4em;
- color: #222;
+  margin: 0 0 0.4em;
+  color: #222;
 }
 
 div.thumb {
   display: inline-block;
-  width: 150px;
-  height: 80px;
+  width: 120px;
+  height: 70px;
   background: center / cover no-repeat;
   border-radius: 3px;
+  margin: 3px 3px 0 0;
 }
 
 blockquote {
- color: gray;
- border-left: 2px solid silver;
- margin: 3px 0 0 0;
- padding: 1px .5rem;
+  color: gray;
+  border-left: 2px solid silver;
+  margin: 3px 0 0 0;
+  padding: 1px .5rem;
+}
+
+div.square {
+  display: inline-block;
+  width: 60px;
+  height: 60px;
+  background: center / cover no-repeat;
+  border-radius: 3px;
+  margin: 3px 3px 0 0;
 }
 </style>
 
@@ -120,7 +181,7 @@ blockquote {
 		{{ range . }}
 			<blockquote>{{ .Text | compact | max 500 | nl2br }}
 				{{- with .Images }}<br>
-				{{ range . }}<div class="thumb" style="background-image: url('{{ . | safe }}')"></div> {{ end }}
+				{{ range . }}<div class="square" style="background-image: url('{{ . | safe }}')"></div> {{ end }}
 				{{ end }}
 			</blockquote>
 		{{- end }}
@@ -129,44 +190,4 @@ blockquote {
 
 {{- end }}
 `
-
-var (
-	reEmptyLines = regexp.MustCompile(`[\p{Z}\s]*\n[\p{Z}\s]*\n`)
-)
-
-func (p Gmail) body(timeline entry.Timeline) (string, error) {
-	tmpl := template.New("body").Funcs(template.FuncMap{
-		"max": func(max int, text string) string {
-			return runewidth.Truncate(text, max, "…")
-		},
-		"compact": func(text string) string {
-			text = reEmptyLines.ReplaceAllString(text, "\n")
-			text = strings.TrimRightFunc(text, unicode.IsSpace)
-			return text
-		},
-		"nl2br": func(text string) template.HTML {
-			text = html.UnescapeString(text)
-			text = template.HTMLEscapeString(text)
-			text = strings.ReplaceAll(text, "\n", "<br>\n")
-			text = strings.ReplaceAll(text, "\t", "&nbsp;&nbsp;")
-			return template.HTML(text)
-		},
-		"safe": func(s string) template.URL {
-			return template.URL(s)
-		},
-	})
-
-	var buff strings.Builder
-	err := template.Must(tmpl.Parse(templateBody)).Execute(&buff, timeline)
-	if err != nil {
-		return "", err
-	}
-
-	inliner, err := premailer.NewPremailerFromString(buff.String(), nil)
-	if err != nil {
-		return "", err
-	}
-
-	return inliner.Transform()
-	// return inliner.Inline(buff.String())
 }

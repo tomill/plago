@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/samber/lo"
-	"github.com/tomill/centre/config"
-	"github.com/tomill/centre/entry"
+	"github.com/tomill/plago/config"
+	"github.com/tomill/plago/entry"
 	"resty.dev/v3"
 )
 
@@ -22,7 +22,7 @@ func FeedFetcher(c config.Config) (Fetcher, error) {
 	p := &Feed{
 		ExecParams: c.ExecParams,
 		client: resty.NewWithClient(httpClient).
-			SetBaseURL("https://theoldreader.com/"). // has Google Reader compatible API
+			SetBaseURL(c.FeedReaderAPI).
 			SetHeader("Authorization", "GoogleLogin auth="+c.FeedReaderToken),
 	}
 

@@ -1,7 +1,7 @@
 package input
 
 import (
-	"github.com/tomill/centre/entry"
+	"github.com/tomill/plago/entry"
 )
 
 type Fetcher interface {

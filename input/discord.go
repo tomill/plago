@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/samber/lo"
-	"github.com/tomill/centre/config"
-	"github.com/tomill/centre/entry"
+	"github.com/tomill/plago/config"
+	"github.com/tomill/plago/entry"
 )
 
 type Discord struct {

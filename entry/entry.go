@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/tomill/centre/config"
+	"github.com/tomill/plago/config"
 )
 
 type Timeline struct {

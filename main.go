@@ -8,9 +8,9 @@ import (
 	"runtime/debug"
 
 	"github.com/samber/lo"
-	"github.com/tomill/centre/config"
-	"github.com/tomill/centre/input"
-	"github.com/tomill/centre/output"
+	"github.com/tomill/plago/config"
+	"github.com/tomill/plago/input"
+	"github.com/tomill/plago/output"
 )
 
 func main() {
