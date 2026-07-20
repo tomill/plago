@@ -20,7 +20,7 @@ func TwListFetcher(c config.Config) (Fetcher, error) {
 	p := &TwList{
 		ExecParams: c.ExecParams,
 		proxy:      lo.Must(TwitterFetcher(c)).(*Twitter),
-		target:     c.TwitterLists,
+		target:     c.TwitterListIDs,
 	}
 
 	return p, nil

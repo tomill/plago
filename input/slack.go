@@ -33,7 +33,7 @@ func SlackFetcher(c config.Config) (Fetcher, error) {
 		ExecParams: c.ExecParams,
 		workspace:  c.SlackWorkspace,
 		client:     slack.New(c.SlackToken, slack.OptionHTTPClient(httpClient)),
-		target:     c.SlackChannels,
+		target:     c.SlackChannelIDs,
 		channels:   &cache[SlackChannel]{},
 	}
 
