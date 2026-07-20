@@ -91,7 +91,7 @@ func GetOptions() Config {
 }
 
 func (c Config) Version() string {
-	return version
+	return "plago " + version
 }
 
 func (l *List) UnmarshalText(b []byte) error {
