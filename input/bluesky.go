@@ -149,7 +149,7 @@ func (p Bluesky) quoted(e *entry.Entry, v *bsky.EmbedRecord_ViewRecord) {
 	}
 
 	a := e.AddAttachment(entry.Entry{
-		Text: fmt.Sprintf(`%s: %s`, v.Author.Handle, post.Text),
+		Text: fmt.Sprintf(`%s: %s`, p.handle(v.Author.Handle), post.Text),
 	})
 	for _, v := range v.Embeds {
 		if find, ok := lo.Find([]any{
