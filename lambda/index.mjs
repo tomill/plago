@@ -10,13 +10,13 @@ export const handler = async event => {
       body: "Not Found",
     };
   }
-
+  
+  console.info(event);
   const queryParams = event.queryStringParameters || {};
   const args = [];
   for (const [key, value] of Object.entries(queryParams)) {
     args.push(`--${key}`, value ?? "");
   }
-  console.info("plago", args.join(" "));
 
   const promise = execFileAsync("./plago", args);
 
@@ -36,8 +36,8 @@ export const handler = async event => {
   }
 
   const { stdout, stderr } = await promise;
-  console.debug(stdout);
   console.info(stderr);
+  console.debug(stdout);
 
   return {
     statusCode: 200,

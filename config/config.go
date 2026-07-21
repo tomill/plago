@@ -31,10 +31,10 @@ type ExecParams struct {
 }
 
 func (c ExecParams) String() string {
-	return fmt.Sprintf("--in %s --out %s --since '%s' --until '%s' %s",
+	return fmt.Sprintf("--in %s --out %s --since '%s' --until '%s'%s",
 		c.Input, c.Output,
 		c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339),
-		lo.Ternary(c.RefID != "", "--refid "+c.RefID, ""),
+		lo.Ternary(c.RefID != "", " --refid "+c.RefID, ""),
 	)
 }
 
@@ -78,7 +78,7 @@ func GetOptions() Config {
 	}
 
 	var logger slog.Handler
-	if c.LogFormat == "json" {
+	if strings.ToLower(c.LogFormat) == "json" {
 		logger = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: c.LogLevel})
 	} else {
 		logger = console.NewHandler(os.Stderr, &console.HandlerOptions{Level: c.LogLevel})

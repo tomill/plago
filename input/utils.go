@@ -6,8 +6,10 @@ import (
 	"net/http/httputil"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/tomill/plago/config"
 )
@@ -30,9 +32,16 @@ func init() {
 	retry := retryablehttp.NewClient()
 	retry.RetryMax = 2
 	retry.RetryWaitMin = 2 * time.Second
+	retry.Logger = hclog.New(&hclog.LoggerOptions{
+		Name:       "http-client",
+		Level:      hclog.Info,
+		Output:     os.Stdout,
+		JSONFormat: true,
+	})
+
 	httpClient = retry.StandardClient()
 
-	if os.Getenv("LOG_LEVEL") == "debug" {
+	if strings.ToLower(os.Getenv("LOG_LEVEL")) == "debug" {
 		httpClient = &http.Client{
 			Transport: &debugTransport{rt: httpClient.Transport},
 		}
