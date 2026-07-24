@@ -17,8 +17,6 @@ import (
 var (
 	tz               *time.Location
 	httpClient       *http.Client
-	reAmazon         = regexp.MustCompile(`^(https://www.amazon.co.jp)/?[^/]*/[^/]*/([A-Z0-9]{10}).*$`)
-	reUtmTracker     = regexp.MustCompile(`[#?&]utm_[a-z0-9]+=[^&]+`)
 	reMarkdownEscape = regexp.MustCompile(`\\([_*\[\]()~` + "`" + `>#+\-=|{}.!])`)
 )
 

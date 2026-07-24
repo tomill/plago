@@ -159,9 +159,6 @@ func (p Twitter) expand(e *entry.Entry, post *twitter.TweetDictionary) {
 				to = url.UnwoundURL
 			}
 
-			to = reAmazon.ReplaceAllString(to, `$1/dp/$2/`)
-			to = reUtmTracker.ReplaceAllString(to, "")
-
 			e.Text = strings.ReplaceAll(e.Text, url.URL, to)
 
 			if url.Title != "" {

@@ -67,6 +67,8 @@ func (p Gmail) Flush(timeline entry.Timeline) error {
 
 var (
 	reEmptyLines = regexp.MustCompile(`[\p{Z}\s]*\n[\p{Z}\s]*\n`)
+	reAmazon     = regexp.MustCompile(`https?://(www\.amazon\.[a-z.]{2,6})/[^\s]*?/(?:dp|gp/product|exec/obidos)/([A-Z0-9]{10})(?:[/?][^\s]*)?`)
+	reUtmTracker = regexp.MustCompile(`[?&]utm_[a-zA-Z0-9_]+=[^&]*`)
 )
 
 func (p Gmail) body(timeline entry.Timeline) (string, error) {
@@ -91,6 +93,9 @@ func (p Gmail) template() *template.Template {
 		"compact": func(text string) string {
 			text = reEmptyLines.ReplaceAllString(text, "\n")
 			text = strings.TrimRightFunc(text, unicode.IsSpace)
+
+			text = reAmazon.ReplaceAllString(text, `https://$1/dp/$2/`)
+			text = reUtmTracker.ReplaceAllString(text, "?") // lazy
 			return text
 		},
 		"nl2br": func(text string) template.HTML {
@@ -168,7 +173,7 @@ div.square {
 	<div class="entry">
 		{{- $lead := .User }}{{ if not .User }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
 		{{ if .URL }}<a href="{{ .URL }}">{{ $lead | max 18 }}</a> &nbsp;
-		{{- else }}{{ $lead }} &nbsp;
+		{{- else }}{{ $lead | max 18 }} &nbsp;
 		{{- end }}
 
 		{{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
