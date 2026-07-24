@@ -72,6 +72,6 @@ func run(c config.Config) error {
 		return err
 	}
 
-	log.Printf("plago fetched %d entries from %s. flushes them to %s ...", len(timeline.Entries), c.Input, c.Output)
+	log.Printf("plago fetched %d entries from %s. flushing them to %s ...", len(timeline.Entries), c.Input, c.Output)
 	return out.Flush(timeline)
 }

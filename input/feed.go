@@ -36,7 +36,7 @@ func (p Feed) Fetch() (entry.Timeline, error) {
 	{
 		var itemRefs struct {
 			ItemRefs []struct {
-				Id string `json:"id"`
+				ID string `json:"id"`
 			} `json:"itemRefs"`
 		}
 		res, err := p.client.R().
@@ -50,7 +50,7 @@ func (p Feed) Fetch() (entry.Timeline, error) {
 			return timeline, fmt.Errorf("get unread item ids error: %w (status: %s)", err, res.Status())
 		}
 		for _, v := range itemRefs.ItemRefs {
-			itemIDs = append(itemIDs, v.Id)
+			itemIDs = append(itemIDs, v.ID)
 		}
 	}
 

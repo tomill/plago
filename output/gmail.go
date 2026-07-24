@@ -113,11 +113,11 @@ func (p Gmail) template() *template.Template {
 		base := filepath.Base(file)
 		return template.Must(template.New(base).Funcs(funcs).ParseFiles(p.templateFile))
 	} else {
-		return template.Must(template.New("body").Funcs(funcs).Parse(p.defaultTempalte()))
+		return template.Must(template.New("body").Funcs(funcs).Parse(p.defaultTemplate()))
 	}
 }
 
-func (p Gmail) defaultTempalte() string {
+func (p Gmail) defaultTemplate() string {
 	return `
 <style>
 h2 {
