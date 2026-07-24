@@ -31,8 +31,8 @@ local list_flatten(s) =
       TWITTER_OAUTH1_TOKEN_SECRET: must_env('TWITTER_OAUTH1_TOKEN_SECRET'),
       TWITTER_USERID: must_env('TWITTER_USERID'),
       TWITTER_LISTS: must_env('TWITTER_LISTS'),
-      BLUESKY_APPKEY: must_env('BLUESKY_APPKEY'),
       BLUESKY_HANDLE: must_env('BLUESKY_HANDLE'),
+      BLUESKY_APPPASS: must_env('BLUESKY_APPPASS'),
       FEEDREADER_TOKEN: must_env('FEEDREADER_TOKEN')
     }
   }

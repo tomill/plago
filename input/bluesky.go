@@ -31,7 +31,7 @@ func BlueskyFetcher(c config.Config) (Fetcher, error) {
 
 	out, err := atproto.ServerCreateSession(context.Background(), p.client, &atproto.ServerCreateSession_Input{
 		Identifier: c.BlueskyHandle,
-		Password:   c.BlueskyAppKey,
+		Password:   c.BlueskyAppPassword,
 	})
 	if err != nil {
 		return p, err

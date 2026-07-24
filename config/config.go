@@ -19,15 +19,13 @@ var (
 )
 
 type ExecParams struct {
-	LogFormat string     `arg:"env:LOG_FORMAT" default:"text" placeholder:"text|json"`
-	LogLevel  slog.Level `arg:"env:LOG_LEVEL"  default:"info" placeholder:"info|debug|warn|error"`
-	Input     string     `arg:"--in,required"           placeholder:"fetcher" help:"(required)"`
-	Output    string     `arg:"--out"   default:"json"  placeholder:"flusher" help:""`
-	Hours     int        `arg:"--hours" default:"1"     help:"Fetch entries from the previous N hours. Use --since/until to specify a time range"`
-	Since     time.Time  `arg:"--since"                 placeholder:""  help:"ISO8601 format"`
-	Until     time.Time  `arg:"--until"                 placeholder:""  help:"ISO8601 format"`
-	Subject   string     `arg:"--subject"               placeholder:""  help:"for --out gmail: Default: \"since\" in YYYY-MM-DD format"`
-	RefID     string     `arg:"--refid"                 placeholder:""  help:"for --out gmail: Additional keys to add to References besides Subject"`
+	Input   string    `arg:"--in,required"          help:"Fetcher module (dummy, bluesky, discord, feed, twitter, twlist, slack and stdin)"`
+	Output  string    `arg:"--out"   default:"json" help:"Flusher module (json, gmail)"`
+	Hours   int       `arg:"--hours" default:"1"    placeholder:"1"   help:"Fetch entries from the previous N hours. Shortcut for --since and --until"`
+	Since   time.Time `arg:"--since"                placeholder:"\"2026-07-25T12:00:00+09:00\""`
+	Until   time.Time `arg:"--until"                placeholder:"\"2026-07-25T13:00:00+09:00\""`
+	Subject string    `arg:"--subject"              help:"Used when --out gmail  Default is --since in YYYY-MM-DD format"`
+	RefID   string    `arg:"--refid"                help:"Used when --out gmail  Additional References keys besides --subject"`
 }
 
 func (c ExecParams) String() string {
@@ -40,26 +38,39 @@ func (c ExecParams) String() string {
 
 type List []string
 
+func (l *List) UnmarshalText(b []byte) error {
+	for v := range strings.SplitSeq(string(b), "\n") {
+		v, _, _ = strings.Cut(v, "#")
+		*l = append(*l, strings.FieldsFunc(v, func(r rune) bool {
+			return unicode.IsSpace(r) || r == ','
+		})...)
+	}
+
+	return nil
+}
+
 type Config struct {
 	ExecParams
-	GmailAddress          mail.Address `placeholder:"" arg:"env:GMAIL_ADDRESS"    help:"for --out gmail"`
-	GmailAppPassword      string       `placeholder:"" arg:"env:GMAIL_APPPASS"    help:"for --out gmail"`
-	GmailTemplateFile     string       `placeholder:"" arg:"env:GMAIL_TEMPLATE"   help:"for --out gmail (optional)"`
-	BlueskyAppKey         string       `placeholder:"" arg:"env:BLUESKY_APPKEY"   help:"for --out bluesky"`
-	BlueskyHandle         string       `placeholder:"" arg:"env:BLUESKY_HANDLE"   help:"for --out bluesky"`
-	DiscordToken          string       `placeholder:"" arg:"env:DISCORD_TOKEN"    help:"for --out discord"`
-	DiscordChannels       List         `placeholder:"" arg:"env:DISCORD_CHANNELS" help:"for --out discord: A newline/space/comma separated list. After # in line is ignored"`
-	FeedReaderAPI         string       `placeholder:"" arg:"env:FEEDREADER_API"   help:"for --out feedreader: GoogleReader compatible API" default:"https://theoldreader.com/"`
-	FeedReaderToken       string       `placeholder:"" arg:"env:FEEDREADER_TOKEN" help:"for --out feedreader: See https://github.com/theoldreader/api"`
-	TwitterConsumerKey    string       `placeholder:"" arg:"env:TWITTER_CONSUMER_KEY"        help:"for --out twitter"`
-	TwitterConsumerSecret string       `placeholder:"" arg:"env:TWITTER_CONSUMER_SECRET"     help:"for --out twitter"`
-	TwitterToken          string       `placeholder:"" arg:"env:TWITTER_OAUTH1_TOKEN"        help:"for --out twitter"`
-	TwitterTokenSecret    string       `placeholder:"" arg:"env:TWITTER_OAUTH1_TOKEN_SECRET" help:"for --out twitter"`
-	TwitterUserID         string       `placeholder:"" arg:"env:TWITTER_USERID"   help:"for --out twitter: Account ID not the @username"`
-	TwitterListIDs        List         `placeholder:"" arg:"env:TWITTER_LISTS"    help:"for --out twilist (Same format as DISCORD_CHANNELS)"`
-	SlackToken            string       `placeholder:"" arg:"env:SLACK_TOKEN"      help:"for --out slack"`
-	SlackWorkspace        string       `placeholder:"" arg:"env:SLACK_WORKSPACE"  help:"for --out slack"`
-	SlackChannelIDs       List         `placeholder:"" arg:"env:SLACK_CHANNELS"   help:"for --out slack (Same format as DISCORD_CHANNELS)"`
+	LogFormat             string       `arg:"--,env:LOG_FORMAT"       help:"Log format (text, json)"              default:"text"`
+	LogLevel              slog.Level   `arg:"--,env:LOG_LEVEL"        help:"Log level (info, debug, warn, error)" default:"info"`
+	BlueskyHandle         string       `arg:"--,env:BLUESKY_HANDLE"   help:"Used when --in bluesky"`
+	BlueskyAppPassword    string       `arg:"--,env:BLUESKY_APPPASS"  help:"Used when --in bluesky  See https://bsky.app/settings/app-passwords"`
+	DiscordToken          string       `arg:"--,env:DISCORD_TOKEN"    help:"Used when --in discord"`
+	DiscordChannels       List         `arg:"--,env:DISCORD_CHANNELS" help:"Used when --in discord  A newline/space/comma separated list (after # in line is ignored)"`
+	FeedReaderAPI         string       `arg:"--,env:FEEDREADER_API"   help:"Used when --in feed     Google Reader compatible API" default:"https://theoldreader.com/"`
+	FeedReaderToken       string       `arg:"--,env:FEEDREADER_TOKEN" help:"Used when --in feed     See https://github.com/theoldreader/api"`
+	TwitterConsumerKey    string       `arg:"--,env:TWITTER_CONSUMER_KEY"        help:"Used when --in twitter/twlist"`
+	TwitterConsumerSecret string       `arg:"--,env:TWITTER_CONSUMER_SECRET"     help:"Used when --in twitter/twlist"`
+	TwitterToken          string       `arg:"--,env:TWITTER_OAUTH1_TOKEN"        help:"Used when --in twitter/twlist"`
+	TwitterTokenSecret    string       `arg:"--,env:TWITTER_OAUTH1_TOKEN_SECRET" help:"Used when --in twitter/twlist"`
+	TwitterUserID         string       `arg:"--,env:TWITTER_USERID"   help:"Used when --in twitter  Account ID not @username"`
+	TwitterListIDs        List         `arg:"--,env:TWITTER_LISTS"    help:"Used when --in twlist   Same format as DISCORD_CHANNELS"`
+	SlackToken            string       `arg:"--,env:SLACK_TOKEN"      help:"Used when --in slack    Multiple workspaces are not supported"`
+	SlackWorkspace        string       `arg:"--,env:SLACK_WORKSPACE"  help:"Used when --in slack"`
+	SlackChannelIDs       List         `arg:"--,env:SLACK_CHANNELS"   help:"Used when --in slack    Same format as DISCORD_CHANNELS"`
+	GmailAddress          mail.Address `arg:"--,env:GMAIL_ADDRESS"    help:"Used when --out gmail   Gmail or Google Workspace email address"`
+	GmailAppPassword      string       `arg:"--,env:GMAIL_APPPASS"    help:"Used when --out gmail   That https://myaccount.google.com/apppasswords"`
+	GmailTemplateFile     string       `arg:"--,env:GMAIL_TEMPLATE"   help:"Used when --out gmail   Template file path to use instead of the default"`
 }
 
 func GetOptions() Config {
@@ -89,16 +100,5 @@ func GetOptions() Config {
 }
 
 func (c Config) Version() string {
-	return "plago " + version
-}
-
-func (l *List) UnmarshalText(b []byte) error {
-	for v := range strings.SplitSeq(string(b), "\n") {
-		v, _, _ = strings.Cut(v, "#")
-		*l = append(*l, strings.FieldsFunc(v, func(r rune) bool {
-			return unicode.IsSpace(r) || r == ','
-		})...)
-	}
-
-	return nil
+	return "Plago build:" + version
 }
