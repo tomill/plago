@@ -5,31 +5,22 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
-	"time"
 
-	"github.com/dghubble/oauth1"
 	"github.com/g8rswimmer/go-twitter/v2"
 	"github.com/tomill/plago/config"
 )
 
 func TestTwitter(t *testing.T) {
-	p := &Twitter{
-		ExecParams: config.ExecParams{
-			Since: time.Unix(0, 0),
-			Until: time.Now(),
-		},
-		client: &twitter.Client{
-			Authorizer: authorizer{},
-			Client: oauth1.NewConfig(
-				os.Getenv("TWITTER_CONSUMER_KEY"),
-				os.Getenv("TWITTER_CONSUMER_SECRET"),
-			).Client(
-				context.Background(),
-				oauth1.NewToken(os.Getenv("TWITTER_OAUTH1_TOKEN"), os.Getenv("TWITTER_OAUTH1_TOKEN_SECRET")),
-			),
-			Host: "https://api.twitter.com",
-		},
+	f, err := TwitterFetcher(config.Config{
+		TwitterConsumerKey:    os.Getenv("TWITTER_CONSUMER_KEY"),
+		TwitterConsumerSecret: os.Getenv("TWITTER_CONSUMER_SECRET"),
+		TwitterToken:          os.Getenv("TWITTER_OAUTH1_TOKEN"),
+		TwitterTokenSecret:    os.Getenv("TWITTER_OAUTH1_TOKEN_SECRET"),
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
+	p := f.(*Twitter)
 
 	res, err := p.client.TweetLookup(context.Background(), []string{
 		"2076489884290949245",

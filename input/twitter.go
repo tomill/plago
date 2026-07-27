@@ -113,17 +113,19 @@ func (p Twitter) build(post *twitter.TweetDictionary) *entry.Entry {
 		switch rt.Reference.Type {
 		case "retweeted":
 			a := &entry.Entry{
-				Text: fmt.Sprintf(`RT @%s: %s`, rt.TweetDictionary.Author.UserName, rt.TweetDictionary.Tweet.Text),
+				Text: rt.TweetDictionary.Tweet.Text,
 			}
 			p.expand(a, rt.TweetDictionary)
-			e.Text = a.Text
+
+			e.Text = fmt.Sprintf(`RT @%s: %s`, rt.TweetDictionary.Author.UserName, a.Text)
 			e.Images = a.Images
 			e.Attachments = a.Attachments
 		case "quoted":
 			a := e.AddAttachment(entry.Entry{
-				Text: fmt.Sprintf(`%s: %s`, rt.TweetDictionary.Author.UserName, rt.TweetDictionary.Tweet.Text),
+				Text: rt.TweetDictionary.Tweet.Text,
 			})
 			p.expand(a, rt.TweetDictionary)
+			a.Text = fmt.Sprintf(`%s: %s`, rt.TweetDictionary.Author.UserName, a.Text)
 		}
 	}
 
@@ -132,9 +134,6 @@ func (p Twitter) build(post *twitter.TweetDictionary) *entry.Entry {
 
 func (p Twitter) expand(e *entry.Entry, post *twitter.TweetDictionary) {
 	if note := post.Tweet.NoteTweet; note != nil {
-		if strings.HasPrefix(e.Text, `RT @`) {
-			e.Text = fmt.Sprintf(`RT @%s: `, post.Author.UserName)
-		}
 		e.Text = lo.Ellipsis(note.Text, 250)
 	}
 
