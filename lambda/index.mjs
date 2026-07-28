@@ -10,7 +10,7 @@ export const handler = async event => {
       body: "Not Found",
     };
   }
-  
+
   console.info(event);
   const queryParams = event.queryStringParameters || {};
   const args = [];
@@ -30,18 +30,35 @@ export const handler = async event => {
       body = Buffer.from(event.body, "base64").toString("utf8");
     }
 
-    JSON.parse(body); // to check json parsable
+    try {
+      JSON.parse(body);
+    } catch (e) {
+      return {
+        statusCode: 400,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ error: "Invalid JSON", message: e.message }),
+      };
+    }
     promise.child.stdin.write(body);
     promise.child.stdin.end();
   }
 
-  const { stdout, stderr } = await promise;
-  console.info(stderr);
-  console.debug(stdout);
+  try {
+    const { stdout, stderr } = await promise;
+    console.info(stderr);
+    console.debug(stdout);
 
-  return {
-    statusCode: 200,
-    headers: { "content-type": "application/json" },
-    body: stdout,
-  };
+    return {
+      statusCode: 200,
+      headers: { "content-type": "application/json" },
+      body: stdout,
+    };
+  } catch (e) {
+    console.error(e);
+    return {
+      statusCode: 500,
+      headers: { "content-type": "application/json" },
+      body: e.stderr,
+    };
+  }
 };
