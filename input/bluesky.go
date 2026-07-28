@@ -121,7 +121,7 @@ func (p Bluesky) embed(e *entry.Entry, embed any) {
 	case *bsky.EmbedExternal_View:
 		a := e.AddAttachment(entry.Entry{Text: v.External.Title})
 		if !strings.Contains(e.Text, v.External.Uri) {
-			a.Text += "\n" + v.External.Uri
+			a.URL = v.External.Uri
 		}
 		if v.External.Thumb != nil {
 			a.AddImage(*v.External.Thumb)

@@ -1,7 +1,6 @@
 package output
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,14 +22,13 @@ https://example.com/?utm_source=mail&utm_medium=email&utm_campaign=mail_signatur
 			},
 		},
 	}
-	var buff strings.Builder
-	err := (&Gmail{}).template().Execute(&buff, timeline)
+
+	res, err := (&Gmail{}).body(timeline)
 	assert.NoError(t, err)
-	assert.Contains(t, buff.String(), `
-	<div class="entry">
-		成歩堂龍一 / Ryui… &nbsp;1行目<br>
-2行目↓<br>
-https://www.amazon.co.jp/dp/4873113598/<br>
+	assert.Contains(t, res, `<div style="margin:0 0 0.4em;color:#222">
+		成歩堂龍一 / Ryui… `+"\u00a0"+`1行目<br/>
+2行目↓<br/>
+https://www.amazon.co.jp/dp/4873113598/<br/>
 https://example.com/???&amp;refid=foo
 	</div>`)
 }

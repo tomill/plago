@@ -67,7 +67,8 @@ func DummyFetcher(c config.Config) (Fetcher, error) {
       "text": "ええええ引用ふたつ",
       "attachments": [
         {
-          "text": "引用\n引用"
+          "text": "引用\n引用",
+          "url": "https://example.com/3-1"
         },
         {
           "text": "引用\n引用"

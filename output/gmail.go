@@ -26,6 +26,9 @@ type Gmail struct {
 }
 
 func GmailFlusher(c config.Config) (Flusher, error) {
+	if c.GmailAddress.Address == "" || c.GmailAppPassword == "" {
+		return nil, fmt.Errorf("gmail address and password are required")
+	}
 	return &Gmail{
 		address:      c.GmailAddress.Address,
 		password:     c.GmailAppPassword,
@@ -77,7 +80,9 @@ func (p Gmail) body(timeline entry.Timeline) (string, error) {
 		return "", err
 	}
 
-	inliner, err := premailer.NewPremailerFromString(buff.String(), nil)
+	inliner, err := premailer.NewPremailerFromString(buff.String(), premailer.NewOptions(
+		premailer.WithRemoveClasses(true),
+	))
 	if err != nil {
 		return "", err
 	}
@@ -185,6 +190,8 @@ div.square {
 		{{- with .Attachments }}<br>
 		{{ range . }}
 			<blockquote>{{ .Text | compact | max 500 | nl2br }}
+				{{- if .URL }}<br>
+				{{ .URL }}{{ end }}
 				{{- with .Images }}<br>
 				{{ range . }}<div class="square" style="background-image: url('{{ . | safe }}')"></div> {{ end }}
 				{{ end }}
