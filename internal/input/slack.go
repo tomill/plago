@@ -10,8 +10,8 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/slack-go/slack"
-	"github.com/tomill/plago/config"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago"
+	"github.com/tomill/plago/internal/config"
 )
 
 type Slack struct {
@@ -40,8 +40,8 @@ func SlackFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-func (p Slack) Fetch() (entry.Timeline, error) {
-	timeline := entry.NewTimeline(p.ExecParams)
+func (p Slack) Fetch() (plago.Timeline, error) {
+	timeline := newTimeline(p.ExecParams)
 
 	p.users = lo.Must(p.getUsers())
 
@@ -69,10 +69,10 @@ func (p Slack) Fetch() (entry.Timeline, error) {
 	return timeline.Sorted(), nil
 }
 
-func (p Slack) build(ch SlackChannel, post slack.Message) *entry.Entry {
+func (p Slack) build(ch SlackChannel, post slack.Message) *plago.Entry {
 	ts := p.time(post.Timestamp)
 
-	e := &entry.Entry{
+	entry := &plago.Entry{
 		Section:   ts.Format("2006-01-02 15:00"),
 		Channel:   ch.ChannelName,
 		Timestamp: ts,
@@ -88,38 +88,38 @@ func (p Slack) build(ch SlackChannel, post slack.Message) *entry.Entry {
 					for _, elem := range blocks[0].(*slack.RichTextBlock).Elements[0].(*slack.RichTextSection).Elements {
 						switch elem := elem.(type) {
 						case *slack.RichTextSectionTextElement:
-							e.Text = elem.Text
+							entry.Text = elem.Text
 						case *slack.RichTextSectionUserElement:
-							e.Text = "@" + p.users[elem.UserID]
+							entry.Text = "@" + p.users[elem.UserID]
 						}
 					}
 				}
 			}
 		}
 	} else {
-		e.Text = p.text(post.Text)
+		entry.Text = p.text(post.Text)
 	}
 
 	for _, v := range post.Reactions {
-		e.Text += fmt.Sprintf(" [%s]", v.Name)
+		entry.Text += fmt.Sprintf(" [%s]", v.Name)
 	}
 
 	for _, v := range post.Attachments {
 		if v.Text != "" {
 			if v.Pretext != "" {
-				e.Text += " " + p.text(v.Pretext)
+				entry.Text += " " + p.text(v.Pretext)
 			}
-			e.AddAttachment(entry.Entry{Text: p.text(v.Title) + "\n" + p.text(v.Text)})
+			entry.AddAttachment(plago.Entry{Text: p.text(v.Title) + "\n" + p.text(v.Text)})
 		} else if v.Fallback != "" {
-			e.AddAttachment(entry.Entry{Text: p.text(v.Fallback)})
+			entry.AddAttachment(plago.Entry{Text: p.text(v.Fallback)})
 		}
 	}
 
-	if e.Text == "" && len(post.Attachments) == 0 {
+	if entry.Text == "" && len(post.Attachments) == 0 {
 		return nil
 	}
 
-	return e
+	return entry
 }
 
 func (p Slack) time(ts string) time.Time {

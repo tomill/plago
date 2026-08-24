@@ -1,0 +1,7 @@
+.*
+!.github
+!.gitignore
+!.lambdaignore
+/bootstrap
+/plago
+/lambda/plago

@@ -1,12 +1,10 @@
-package entry
+package plago
 
 import (
 	"fmt"
 	"runtime"
 	"sort"
 	"time"
-
-	"github.com/tomill/plago/config"
 )
 
 type Timeline struct {
@@ -26,14 +24,6 @@ type Entry struct {
 	Text        string    `json:"text,omitempty"`
 	Images      []string  `json:"images,omitempty"`
 	Attachments []*Entry  `json:"attachments,omitempty"`
-}
-
-func NewTimeline(c config.ExecParams) Timeline {
-	return Timeline{
-		Source:  c.Input,
-		Subject: c.Subject,
-		RefID:   c.RefID,
-	}
 }
 
 func (t *Timeline) Append(entry *Entry) {
@@ -73,11 +63,11 @@ func (t *Timeline) Sorted() Timeline {
 	return *t
 }
 
-func (e *Entry) AddImage(url string) {
-	e.Images = append(e.Images, url)
+func (entry *Entry) AddImage(url string) {
+	entry.Images = append(entry.Images, url)
 }
 
-func (e *Entry) AddAttachment(a Entry) *Entry {
-	e.Attachments = append(e.Attachments, &a)
+func (entry *Entry) AddAttachment(a Entry) *Entry {
+	entry.Attachments = append(entry.Attachments, &a)
 	return &a
 }

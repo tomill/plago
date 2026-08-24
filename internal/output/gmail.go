@@ -1,6 +1,7 @@
 package output
 
 import (
+	_ "embed"
 	"fmt"
 	"html"
 	"html/template"
@@ -14,8 +15,8 @@ import (
 
 	"github.com/jordan-wright/email"
 	"github.com/mattn/go-runewidth"
-	"github.com/tomill/plago/config"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago"
+	"github.com/tomill/plago/internal/config"
 	"github.com/vanng822/go-premailer/premailer"
 )
 
@@ -36,7 +37,7 @@ func GmailFlusher(c config.Config) (Flusher, error) {
 	}, nil
 }
 
-func (p Gmail) Flush(timeline entry.Timeline) error {
+func (p Gmail) Flush(timeline plago.Timeline) error {
 	if len(timeline.Entries) == 0 {
 		return nil
 	}
@@ -70,11 +71,11 @@ func (p Gmail) Flush(timeline entry.Timeline) error {
 
 var (
 	reEmptyLines = regexp.MustCompile(`[\p{Z}\s]*\n[\p{Z}\s]*\n`)
-	reAmazon     = regexp.MustCompile(`https?://(www\.amazon\.[a-z.]{2,6})/[^\s]*?/(?:dp|gp/product|exec/obidos)/([A-Z0-9]{10})(?:[/?][^\s]*)?`)
+	reAmazon     = regexp.MustCompile(`https?://(www\.amazon\.[a-z.]{2,6})/(?:[^\s]*?/)?(?:dp|gp/product|exec/obidos)/([A-Z0-9]{10})(?:[/?][^\s]*)?`)
 	reUtmTracker = regexp.MustCompile(`[?&]utm_[a-zA-Z0-9_]+=[^&]*`)
 )
 
-func (p Gmail) body(timeline entry.Timeline) (string, error) {
+func (p Gmail) body(timeline plago.Timeline) (string, error) {
 	var buff strings.Builder
 	if err := p.template().Execute(&buff, timeline); err != nil {
 		return "", err
@@ -89,6 +90,9 @@ func (p Gmail) body(timeline entry.Timeline) (string, error) {
 
 	return inliner.Transform()
 }
+
+//go:embed gmail_template.tmpl
+var defaultTemplate string
 
 func (p Gmail) template() *template.Template {
 	funcs := template.FuncMap{
@@ -118,88 +122,6 @@ func (p Gmail) template() *template.Template {
 		base := filepath.Base(file)
 		return template.Must(template.New(base).Funcs(funcs).ParseFiles(p.templateFile))
 	} else {
-		return template.Must(template.New("body").Funcs(funcs).Parse(p.defaultTemplate()))
+		return template.Must(template.New("body").Funcs(funcs).Parse(defaultTemplate))
 	}
-}
-
-func (p Gmail) defaultTemplate() string {
-	return `
-<style>
-h2 {
-  font-size: 1rem;
-  color: gray;
-}
-
-div.entry {
-  margin: 0 0 0.4em;
-  color: #222;
-}
-
-div.thumb {
-  display: inline-block;
-  width: 120px;
-  height: 70px;
-  background: center / cover no-repeat;
-  border-radius: 3px;
-  margin: 3px 3px 0 0;
-}
-
-blockquote {
-  color: gray;
-  border-left: 2px solid silver;
-  margin: 3px 0 0 0;
-  padding: 1px .5rem;
-}
-
-div.square {
-  display: inline-block;
-  width: 60px;
-  height: 60px;
-  background: center / cover no-repeat;
-  border-radius: 3px;
-  margin: 3px 3px 0 0;
-}
-</style>
-
-{{- $section := "" }}
-{{- $channel := "" }}
-{{- range .Entries }}
-
-	{{- if ne $section .Section }}
-	{{ if .Section }}<h2>{{ .Section }}</h2>{{ end }}
-	{{ end }}
-	{{- $section = .Section }}
-
-	{{- if ne $channel .Channel }}
-	{{ if .Channel }}<h3>{{ .Channel }}</h3>{{ end }}
-	{{ end }}
-	{{- $channel = .Channel }}
-
-	<div class="entry">
-		{{- $lead := .User }}{{ if not .User }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
-		{{ if .URL }}<a href="{{ .URL }}">{{ $lead | max 18 }}</a> &nbsp;
-		{{- else }}{{ $lead | max 18 }} &nbsp;
-		{{- end }}
-
-		{{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
-
-		{{- with .Images }}<br>
-		{{ range . }}<div class="thumb" style="background-image: url('{{ . | safe }}')"></div> {{ end }}
-		{{- end }}
-
-		{{- with .Attachments }}<br>
-		{{ range . }}
-			<blockquote>{{ .Text | compact | max 500 | nl2br }}
-				{{- if .URL }}<br>
-				{{ .URL }}{{ end }}
-				{{- with .Images }}<br>
-				{{ range . }}<div class="square" style="background-image: url('{{ . | safe }}')"></div> {{ end }}
-				{{ end }}
-			</blockquote>
-		{{- end }}
-		{{- end }}
-	</div>
-
-{{- end }}
-`
 }

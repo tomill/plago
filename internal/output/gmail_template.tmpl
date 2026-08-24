@@ -1,0 +1,74 @@
+<style>
+h2 {
+  font-size: 1rem;
+  color: gray;
+}
+
+div.entry {
+  margin: 0 0 0.4em;
+  color: #222;
+}
+
+div.thumb {
+  display: inline-block;
+  width: 120px;
+  height: 70px;
+  background: center / cover no-repeat;
+  border-radius: 3px;
+  margin: 3px 3px 0 0;
+}
+
+blockquote {
+  color: gray;
+  border-left: 2px solid silver;
+  margin: 3px 0 0 0;
+  padding: 1px .5rem;
+}
+
+div.square {
+  display: inline-block;
+  width: 60px;
+  height: 60px;
+  background: center / cover no-repeat;
+  border-radius: 3px;
+  margin: 3px 3px 0 0;
+}
+</style>
+
+{{- $section := "" }}
+{{- $channel := "" }}
+{{- range .Entries }}
+
+	{{- if ne $section .Section }}
+	{{ if .Section }}<h2>{{ .Section }}</h2>{{ end }}
+	{{ end }}
+	{{- $section = .Section }}
+
+	{{- if ne $channel .Channel }}
+	{{ if .Channel }}<h3>{{ .Channel }}</h3>{{ end }}
+	{{ end }}
+	{{- $channel = .Channel }}
+
+	<div class="entry">
+		{{- $lead := .User }}{{ if not .User }}{{ $lead = .Timestamp.Format "15:04" }}{{ end }}
+		{{ if .URL }}<a href="{{ .URL }}">{{ $lead | max 18 }}</a> &nbsp;
+		{{- else }}{{ $lead | max 18 }} &nbsp;
+		{{- end }}
+
+		{{- if .Reply }}» {{ end }}{{ .Text | compact | nl2br }}
+
+		{{- with .Images }}<br>
+		{{ range . }}<div class="thumb" style="background-image: url('{{ . | safe }}')"></div> {{ end }}
+		{{- end }}
+
+		{{- with .Attachments }}<br>
+		{{ range . }}
+			<blockquote>{{ if .Text }}{{ .Text | compact | max 250 | nl2br }}<br>{{ end }}
+				{{ if .URL }}{{ .URL }}<br>{{ end }}
+				{{ range .Images }}<div class="square" style="background-image: url('{{ . | safe }}')"></div> {{ end }}
+			</blockquote>
+		{{- end }}
+		{{- end }}
+	</div>
+
+{{- end }}

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tomill/plago/config"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago/internal/config"
+	"github.com/tomill/plago"
 )
 
 type Stdin struct {
@@ -21,10 +21,10 @@ func StdinFetcher(c config.Config) (Fetcher, error) {
 	return &Stdin{c.ExecParams}, nil
 }
 
-func (p Stdin) Fetch() (entry.Timeline, error) {
-	timeline := entry.Timeline{
+func (p Stdin) Fetch() (plago.Timeline, error) {
+	timeline := plago.Timeline{
 		Source:  "stdin",
-		Entries: make([]entry.Entry, 0),
+		Entries: make([]plago.Entry, 0),
 	}
 
 	err := json.NewDecoder(os.Stdin).Decode(&timeline)

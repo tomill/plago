@@ -10,8 +10,8 @@ import (
 	"github.com/bluesky-social/indigo/api/bsky"
 	"github.com/bluesky-social/indigo/xrpc"
 	"github.com/samber/lo"
-	"github.com/tomill/plago/config"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago"
+	"github.com/tomill/plago/internal/config"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -46,8 +46,8 @@ func BlueskyFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-func (p Bluesky) Fetch() (entry.Timeline, error) {
-	timeline := entry.NewTimeline(p.ExecParams)
+func (p Bluesky) Fetch() (plago.Timeline, error) {
+	timeline := newTimeline(p.ExecParams)
 
 	res, err := bsky.FeedGetTimeline(context.Background(), p.client, "reverse-chronological", "", 100)
 	if err != nil {
@@ -60,7 +60,7 @@ func (p Bluesky) Fetch() (entry.Timeline, error) {
 	return timeline.Sorted(), nil
 }
 
-func (p Bluesky) build(feed *bsky.FeedDefs_FeedViewPost) *entry.Entry {
+func (p Bluesky) build(feed *bsky.FeedDefs_FeedViewPost) *plago.Entry {
 	post, ok := feed.Post.Record.Val.(*bsky.FeedPost)
 	if !ok {
 		return nil
@@ -72,25 +72,25 @@ func (p Bluesky) build(feed *bsky.FeedDefs_FeedViewPost) *entry.Entry {
 		return nil
 	}
 
-	e := &entry.Entry{
+	entry := &plago.Entry{
 		Section:   ts.Format("2006-01-02 15:00"),
 		Timestamp: ts,
-		URL: fmt.Sprintf("https://bsky.app/profile/%s/post/%s",
+		URL: fmt.Sprintf("https://bsky.app/profile/%s/post%s",
 			feed.Post.Author.Handle,
-			feed.Post.Uri[strings.LastIndex(feed.Post.Uri, "/")+1:],
+			feed.Post.Uri[strings.LastIndex(feed.Post.Uri, "/"):],
 		),
 		User: *feed.Post.Author.DisplayName,
 		Text: p.text(post),
 	}
 
 	if feed.Reply != nil && feed.Reply.Parent.FeedDefs_PostView.Author.Handle != feed.Post.Author.Handle {
-		e.Reply = true
-		e.Text = fmt.Sprintf(`@%s %s`, p.handle(feed.Reply.Parent.FeedDefs_PostView.Author.Handle), e.Text)
+		entry.Reply = true
+		entry.Text = fmt.Sprintf(`@%s %s`, p.handle(feed.Reply.Parent.FeedDefs_PostView.Author.Handle), entry.Text)
 	}
 
 	if feed.Reason != nil && feed.Reason.FeedDefs_ReasonRepost != nil {
-		e.Text = fmt.Sprintf(`RT @%s: %s`, p.handle(feed.Post.Author.Handle), e.Text)
-		e.User = *feed.Reason.FeedDefs_ReasonRepost.By.DisplayName
+		entry.Text = fmt.Sprintf(`RT @%s: %s`, p.handle(feed.Post.Author.Handle), entry.Text)
+		entry.User = *feed.Reason.FeedDefs_ReasonRepost.By.DisplayName
 	}
 
 	if embed := feed.Post.Embed; embed != nil {
@@ -101,26 +101,26 @@ func (p Bluesky) build(feed *bsky.FeedDefs_FeedViewPost) *entry.Entry {
 			embed.EmbedRecord_View,
 			embed.EmbedRecordWithMedia_View,
 		}, lo.IsNotNil); ok {
-			p.embed(e, find)
+			p.embed(entry, find)
 		}
 	}
 
-	return e
+	return entry
 }
 
-func (p Bluesky) embed(e *entry.Entry, embed any) {
+func (p Bluesky) embed(entry *plago.Entry, embed any) {
 	switch v := embed.(type) {
 	case *bsky.EmbedImages_View:
 		for _, media := range v.Images {
-			e.AddImage(media.Thumb)
+			entry.AddImage(media.Thumb)
 		}
 	case *bsky.EmbedVideo_View:
 		if v.Thumbnail != nil {
-			e.AddImage(*v.Thumbnail)
+			entry.AddImage(*v.Thumbnail)
 		}
 	case *bsky.EmbedExternal_View:
-		a := e.AddAttachment(entry.Entry{Text: v.External.Title})
-		if !strings.Contains(e.Text, v.External.Uri) {
+		a := entry.AddAttachment(plago.Entry{Text: v.External.Title})
+		if !strings.Contains(entry.Text, v.External.Uri) {
 			a.URL = v.External.Uri
 		}
 		if v.External.Thumb != nil {
@@ -129,7 +129,7 @@ func (p Bluesky) embed(e *entry.Entry, embed any) {
 
 	case *bsky.EmbedRecord_View:
 		if v.Record != nil && v.Record.EmbedRecord_ViewRecord != nil {
-			p.quoted(e, v.Record.EmbedRecord_ViewRecord)
+			p.quoted(entry, v.Record.EmbedRecord_ViewRecord)
 		}
 	case *bsky.EmbedRecordWithMedia_View:
 		if find, ok := lo.Find([]any{
@@ -137,21 +137,21 @@ func (p Bluesky) embed(e *entry.Entry, embed any) {
 			v.Media.EmbedVideo_View,
 			v.Media.EmbedExternal_View,
 		}, lo.IsNotNil); ok {
-			p.embed(e, find)
+			p.embed(entry, find)
 		}
 		if v.Record != nil && v.Record.Record != nil && v.Record.Record.EmbedRecord_ViewRecord != nil {
-			p.quoted(e, v.Record.Record.EmbedRecord_ViewRecord)
+			p.quoted(entry, v.Record.Record.EmbedRecord_ViewRecord)
 		}
 	}
 }
 
-func (p Bluesky) quoted(e *entry.Entry, v *bsky.EmbedRecord_ViewRecord) {
+func (p Bluesky) quoted(entry *plago.Entry, v *bsky.EmbedRecord_ViewRecord) {
 	post, ok := v.Value.Val.(*bsky.FeedPost)
 	if !ok {
 		return
 	}
 
-	a := e.AddAttachment(entry.Entry{
+	a := entry.AddAttachment(plago.Entry{
 		Text: fmt.Sprintf(`%s: %s`, p.handle(v.Author.Handle), post.Text),
 	})
 	for _, v := range v.Embeds {

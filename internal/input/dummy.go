@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tomill/plago/config"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago/internal/config"
+	"github.com/tomill/plago"
 )
 
 type Dummy struct {
@@ -86,8 +86,8 @@ func DummyFetcher(c config.Config) (Fetcher, error) {
 	}, nil
 }
 
-func (p Dummy) Fetch() (entry.Timeline, error) {
-	timeline := entry.NewTimeline(p.ExecParams)
+func (p Dummy) Fetch() (plago.Timeline, error) {
+	timeline := newTimeline(p.ExecParams)
 	if err := json.NewDecoder(strings.NewReader(p.data)).Decode(&timeline); err != nil {
 		return timeline, err
 	}

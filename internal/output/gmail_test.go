@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago"
 )
 
 func TestGmailTemplate(t *testing.T) {
-	timeline := entry.Timeline{
-		Entries: []entry.Entry{
+	timeline := plago.Timeline{
+		Entries: []plago.Entry{
 			{
 				User: `成歩堂龍一 / Ryuichi Naruhodo`,
 				Text: `1行目

@@ -6,8 +6,8 @@ import (
 
 	"github.com/g8rswimmer/go-twitter/v2"
 	"github.com/samber/lo"
-	"github.com/tomill/plago/config"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago"
+	"github.com/tomill/plago/internal/config"
 )
 
 type TwList struct {
@@ -26,8 +26,8 @@ func TwListFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-func (p TwList) Fetch() (entry.Timeline, error) {
-	timeline := entry.NewTimeline(p.ExecParams)
+func (p TwList) Fetch() (plago.Timeline, error) {
+	timeline := newTimeline(p.ExecParams)
 
 	for _, listID := range p.target {
 		var channel string
@@ -61,9 +61,9 @@ func (p TwList) Fetch() (entry.Timeline, error) {
 					break
 				}
 
-				if e := p.proxy.build(tw); e != nil {
-					e.Channel = channel
-					timeline.Append(e)
+				if entry := p.proxy.build(tw); entry != nil {
+					entry.Channel = channel
+					timeline.Append(entry)
 				}
 			}
 

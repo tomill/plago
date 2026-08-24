@@ -7,8 +7,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/samber/lo"
-	"github.com/tomill/plago/config"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago"
+	"github.com/tomill/plago/internal/config"
 )
 
 type Discord struct {
@@ -38,8 +38,8 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-func (p Discord) Fetch() (entry.Timeline, error) {
-	timeline := entry.NewTimeline(p.ExecParams)
+func (p Discord) Fetch() (plago.Timeline, error) {
+	timeline := newTimeline(p.ExecParams)
 
 	for _, channelID := range p.target {
 		messages, err := p.client.ChannelMessages(channelID, 100, "", "", "", discordgo.WithClient(httpClient))
@@ -55,7 +55,11 @@ func (p Discord) Fetch() (entry.Timeline, error) {
 	return timeline.Sorted(), nil
 }
 
-func (p Discord) build(post *discordgo.Message) *entry.Entry {
+var (
+	reMarkdownEscape = regexp.MustCompile(`\\([_*\[\]()~` + "`" + `>#+\-=|{}.!])`)
+)
+
+func (p Discord) build(post *discordgo.Message) *plago.Entry {
 	ts := post.Timestamp.In(tz)
 	if !timeinrange(ts, p.ExecParams) {
 		return nil
@@ -63,7 +67,7 @@ func (p Discord) build(post *discordgo.Message) *entry.Entry {
 
 	ch := p.channel(post.ChannelID)
 
-	e := &entry.Entry{
+	entry := &plago.Entry{
 		Section:   ts.Format("2006-01-02 15:00"),
 		Channel:   fmt.Sprintf("%s %s", ch.ServerName, ch.ChannelName),
 		Timestamp: ts,
@@ -75,18 +79,18 @@ func (p Discord) build(post *discordgo.Message) *entry.Entry {
 
 	for _, v := range post.Attachments {
 		if strings.HasPrefix(v.ContentType, "image/") {
-			e.AddImage(v.ProxyURL)
+			entry.AddImage(v.ProxyURL)
 		} else {
-			e.AddAttachment(entry.Entry{Text: v.URL + "\n" + v.Filename})
+			entry.AddAttachment(plago.Entry{Text: v.URL + "\n" + v.Filename})
 		}
 	}
 
 	for _, v := range post.StickerItems {
 		switch v.FormatType {
 		case discordgo.StickerFormatTypeGIF:
-			e.AddImage(fmt.Sprintf(`https://media.discordapp.net/stickers/%s.gif?size=320&passthrough=false`, v.ID))
+			entry.AddImage(fmt.Sprintf(`https://media.discordapp.net/stickers/%s.gif?size=320&passthrough=false`, v.ID))
 		default:
-			e.AddImage(fmt.Sprintf(`https://cdn.discordapp.net/stickers/%s.png?size=320&passthrough=false`, v.ID))
+			entry.AddImage(fmt.Sprintf(`https://cdn.discordapp.net/stickers/%s.png?size=320&passthrough=false`, v.ID))
 		}
 	}
 
@@ -95,7 +99,7 @@ func (p Discord) build(post *discordgo.Message) *entry.Entry {
 		if title == "" && v.Author != nil {
 			title = v.Author.Name
 		}
-		a := e.AddAttachment(entry.Entry{
+		a := entry.AddAttachment(plago.Entry{
 			Text: title + "\n" + reMarkdownEscape.ReplaceAllString(v.Description, "$1"),
 		})
 		if v.Thumbnail != nil {
@@ -103,7 +107,7 @@ func (p Discord) build(post *discordgo.Message) *entry.Entry {
 		}
 	}
 
-	return e
+	return entry
 }
 
 func (p Discord) channel(cid string) DiscordChannel {

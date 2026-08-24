@@ -7,19 +7,15 @@ import (
 	"os"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/alexflint/go-arg"
 	"github.com/phsym/console-slog"
-	"github.com/samber/lo"
 )
 
-var (
-	version = "(development)"
-)
+var version = "(development)"
 
 type ExecParams struct {
-	Input   string    `arg:"--in,required"          help:"Fetcher module (dummy, bluesky, discord, feed, twitter, twlist, slack and stdin)"`
+	Input   string    `arg:"--in,required"          help:"Fetcher module (dummy, bluesky, discord, feed, twitter, twlist, slack, and stdin)"`
 	Output  string    `arg:"--out"   default:"json" help:"Flusher module (json, gmail)"`
 	Hours   int       `arg:"--hours" default:"1"    placeholder:"1"   help:"Fetch entries from the previous N hours. Shortcut for --since and --until"`
 	Since   time.Time `arg:"--since"                placeholder:"\"2026-07-25T12:00:00+09:00\""`
@@ -29,24 +25,10 @@ type ExecParams struct {
 }
 
 func (c ExecParams) String() string {
-	return fmt.Sprintf("--in %s --out %s --since '%s' --until '%s'%s",
+	return fmt.Sprintf("--in %s --out %s --since '%s' --until '%s'",
 		c.Input, c.Output,
 		c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339),
-		lo.Ternary(c.RefID != "", " --refid "+c.RefID, ""),
 	)
-}
-
-type List []string
-
-func (l *List) UnmarshalText(b []byte) error {
-	for v := range strings.SplitSeq(string(b), "\n") {
-		v, _, _ = strings.Cut(v, "#")
-		*l = append(*l, strings.FieldsFunc(v, func(r rune) bool {
-			return unicode.IsSpace(r) || r == ','
-		})...)
-	}
-
-	return nil
 }
 
 type Config struct {
@@ -59,7 +41,7 @@ type Config struct {
 	DiscordChannels       List         `arg:"--,env:DISCORD_CHANNELS" help:"Used when --in discord  A newline/space/comma separated list (after # in line is ignored)"`
 	FeedReaderAPI         string       `arg:"--,env:FEEDREADER_API"   help:"Used when --in feed     Google Reader compatible API" default:"https://theoldreader.com/"`
 	FeedReaderToken       string       `arg:"--,env:FEEDREADER_TOKEN" help:"Used when --in feed     See https://github.com/theoldreader/api"`
-	TwitterConsumerKey    string       `arg:"--,env:TWITTER_CONSUMER_KEY"        help:"Used when --in twitter/twlist"`
+	TwitterConsumerKey    string       `arg:"--,env:TWITTER_CONSUMER_KEY"        help:"Used when --in twitter/twlist  The X API requires a paid subscription"`
 	TwitterConsumerSecret string       `arg:"--,env:TWITTER_CONSUMER_SECRET"     help:"Used when --in twitter/twlist"`
 	TwitterToken          string       `arg:"--,env:TWITTER_OAUTH1_TOKEN"        help:"Used when --in twitter/twlist"`
 	TwitterTokenSecret    string       `arg:"--,env:TWITTER_OAUTH1_TOKEN_SECRET" help:"Used when --in twitter/twlist"`
@@ -69,7 +51,7 @@ type Config struct {
 	SlackWorkspace        string       `arg:"--,env:SLACK_WORKSPACE"  help:"Used when --in slack"`
 	SlackChannelIDs       List         `arg:"--,env:SLACK_CHANNELS"   help:"Used when --in slack    Same format as DISCORD_CHANNELS"`
 	GmailAddress          mail.Address `arg:"--,env:GMAIL_ADDRESS"    help:"Used when --out gmail   Gmail or Google Workspace email address"`
-	GmailAppPassword      string       `arg:"--,env:GMAIL_APPPASS"    help:"Used when --out gmail   That https://myaccount.google.com/apppasswords"`
+	GmailAppPassword      string       `arg:"--,env:GMAIL_APPPASS"    help:"Used when --out gmail   See https://myaccount.google.com/apppasswords"`
 	GmailTemplateFile     string       `arg:"--,env:GMAIL_TEMPLATE"   help:"Used when --out gmail   Template file path to use instead of the default"`
 }
 

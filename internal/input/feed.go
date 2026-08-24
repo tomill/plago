@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/samber/lo"
-	"github.com/tomill/plago/config"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago"
+	"github.com/tomill/plago/internal/config"
 	"resty.dev/v3"
 )
 
@@ -29,8 +29,8 @@ func FeedFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-func (p Feed) Fetch() (entry.Timeline, error) {
-	timeline := entry.NewTimeline(p.ExecParams)
+func (p Feed) Fetch() (plago.Timeline, error) {
+	timeline := newTimeline(p.ExecParams)
 
 	var itemIDs []string
 	{
@@ -74,8 +74,8 @@ func (p Feed) Fetch() (entry.Timeline, error) {
 
 	var readIDs []string
 	for _, item := range items.Items {
-		if e := p.build(item); e != nil {
-			timeline.Append(e)
+		if entry := p.build(item); entry != nil {
+			timeline.Append(entry)
 			readIDs = append(readIDs, item.ID)
 		}
 	}
@@ -119,7 +119,7 @@ var (
 	reFirstImageURL = regexp.MustCompile(`<img\s+[^>]*src="(https://[^"]+)"`)
 )
 
-func (p Feed) build(item feedItem) *entry.Entry {
+func (p Feed) build(item feedItem) *plago.Entry {
 	if !timeinrange(time.UnixMilli(item.CrawlTimeMsec), p.ExecParams) {
 		return nil
 	}
@@ -132,7 +132,7 @@ func (p Feed) build(item feedItem) *entry.Entry {
 		}
 	}
 
-	e := &entry.Entry{
+	entry := &plago.Entry{
 		Channel:   ch,
 		Timestamp: time.Unix(item.Published, 0).In(tz),
 		URL:       item.Canonical[0].Href,
@@ -140,16 +140,18 @@ func (p Feed) build(item feedItem) *entry.Entry {
 		Text:      item.Title,
 	}
 
+	var img []string
 	for _, enclosure := range item.Enclosure {
 		if strings.HasPrefix(enclosure.Type, "image/") {
-			e.AddImage(enclosure.URL)
+			img = append(img, enclosure.URL)
 		}
 	}
-	if len(e.Images) == 0 {
-		if m := reFirstImageURL.FindStringSubmatch(item.Summary.Content); len(m) > 0 {
-			e.AddImage(m[1])
-		}
+	if m := reFirstImageURL.FindStringSubmatch(item.Summary.Content); len(m) > 0 {
+		img = append(img, m[1])
+	}
+	if len(img) > 0 {
+		entry.AddAttachment(plago.Entry{Images: img})
 	}
 
-	return e
+	return entry
 }

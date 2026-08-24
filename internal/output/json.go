@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/tomill/plago/config"
-	"github.com/tomill/plago/entry"
+	"github.com/tomill/plago"
+	"github.com/tomill/plago/internal/config"
 )
 
 type JSON struct {
@@ -19,6 +19,6 @@ func JSONFlusher(c config.Config) (Flusher, error) {
 	return &JSON{enc}, nil
 }
 
-func (p JSON) Flush(timeline entry.Timeline) error {
+func (p JSON) Flush(timeline plago.Timeline) error {
 	return p.json.Encode(timeline)
 }

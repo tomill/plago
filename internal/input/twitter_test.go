@@ -5,13 +5,16 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/g8rswimmer/go-twitter/v2"
-	"github.com/tomill/plago/config"
+	"github.com/tomill/plago/internal/config"
 )
 
 func TestTwitter(t *testing.T) {
 	f, err := TwitterFetcher(config.Config{
+		Since:                 time.Time{},
+		Until:                 time.Now(),
 		TwitterConsumerKey:    os.Getenv("TWITTER_CONSUMER_KEY"),
 		TwitterConsumerSecret: os.Getenv("TWITTER_CONSUMER_SECRET"),
 		TwitterToken:          os.Getenv("TWITTER_OAUTH1_TOKEN"),
@@ -39,7 +42,7 @@ func TestTwitter(t *testing.T) {
 
 	for _, tw := range res.Raw.TweetDictionaries() {
 		_ = json.NewEncoder(os.Stderr).Encode(tw)
-		e := p.build(tw)
-		_ = json.NewEncoder(os.Stderr).Encode(e)
+		entry := p.build(tw)
+		_ = json.NewEncoder(os.Stderr).Encode(entry)
 	}
 }
