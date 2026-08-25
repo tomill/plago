@@ -139,7 +139,7 @@ func (p Twitter) build(post *twitter.TweetDictionary) *plago.Entry {
 
 func (p Twitter) expand(entry *plago.Entry, post *twitter.TweetDictionary) {
 	if note := post.Tweet.NoteTweet; note != nil {
-		entry.Text = runewidth.Truncate(note.Text, 300, "[…]")
+		entry.Text = runewidth.Truncate(note.Text, 300, " […]")
 	}
 
 	if att := post.Tweet.Attachments; att != nil && len(att.PollIDs) > 0 {

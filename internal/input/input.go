@@ -18,4 +18,5 @@ var FetcherRegistry = map[string]func(config.Config) (Fetcher, error){
 	"bluesky": BlueskyFetcher,
 	"slack":   SlackFetcher,
 	"discord": DiscordFetcher,
+	"youtube": YoutubeFetcher,
 }

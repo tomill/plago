@@ -15,7 +15,7 @@ import (
 var version = "(development)"
 
 type ExecParams struct {
-	Input   string    `arg:"--in,required"          help:"Fetcher module (dummy, bluesky, discord, feed, twitter, twlist, slack, and stdin)"`
+	Input   string    `arg:"--in,required"          help:"Fetcher module (dummy, bluesky, discord, feed, twitter, twlist, slack, youtube and stdin)"`
 	Output  string    `arg:"--out"   default:"json" help:"Flusher module (json, gmail)"`
 	Hours   int       `arg:"--hours" default:"1"    placeholder:"1"   help:"Fetch entries from the previous N hours. Shortcut for --since and --until"`
 	Since   time.Time `arg:"--since"                placeholder:"\"2026-07-25T12:00:00+09:00\""`
@@ -50,6 +50,8 @@ type Config struct {
 	SlackToken            string       `arg:"--,env:SLACK_TOKEN"      help:"Used when --in slack    Multiple workspaces are not supported"`
 	SlackWorkspace        string       `arg:"--,env:SLACK_WORKSPACE"  help:"Used when --in slack"`
 	SlackChannelIDs       List         `arg:"--,env:SLACK_CHANNELS"   help:"Used when --in slack    Same format as DISCORD_CHANNELS"`
+	YoutubeAPIKey         string       `arg:"--,env:YOUTUBE_API_KEY"  help:"Used when --in youtube"`
+	YoutubeChannelIDs     List         `arg:"--,env:YOUTUBE_CHANNELS" help:"Used when --in youtube  Same format as DISCORD_CHANNELS"`
 	GmailAddress          mail.Address `arg:"--,env:GMAIL_ADDRESS"    help:"Used when --out gmail   Gmail or Google Workspace email address"`
 	GmailAppPassword      string       `arg:"--,env:GMAIL_APPPASS"    help:"Used when --out gmail   See https://myaccount.google.com/apppasswords"`
 	GmailTemplateFile     string       `arg:"--,env:GMAIL_TEMPLATE"   help:"Used when --out gmail   Template file path to use instead of the default"`
