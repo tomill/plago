@@ -36,6 +36,8 @@ func DummyFetcher(c config.Config) (Fetcher, error) {
       "user": "user",
       "text": "いいいいいいい<tag></tag>いいいいいいいいいいいいいい"
     },
+    null,
+    {},
     {
       "section": "2022-09-01 13:00",
       "channel": "#main",

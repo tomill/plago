@@ -18,6 +18,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/vanng822/go-premailer v1.35.0
 	golang.org/x/net v0.58.0
+	golang.org/x/sync v0.22.0
 	google.golang.org/api v0.293.0
 	resty.dev/v3 v3.0.0-rc.3
 )

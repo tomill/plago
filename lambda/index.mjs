@@ -20,16 +20,11 @@ export const handler = async event => {
 
   const promise = execFileAsync("./plago", args);
 
-  if (
-    event.requestContext?.http?.method === "POST" &&
-    event.headers?.["content-type"].startsWith("application/json") &&
-    event.body !== undefined
-  ) {
+  if (event.headers?.["content-type"]?.startsWith("application/json")) {
     let body = event.body ?? "";
     if (event.isBase64Encoded) {
       body = Buffer.from(event.body, "base64").toString("utf8");
     }
-
     try {
       JSON.parse(body);
     } catch (e) {

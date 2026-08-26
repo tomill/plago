@@ -38,6 +38,7 @@ div.square {
 {{- $section := "" }}
 {{- $channel := "" }}
 {{- range .Entries }}
+	{{- if not .IsZero }}
 
 	{{- if ne $section .Section }}
 	{{ if .Section }}<h2>{{ .Section }}</h2>{{ end }}
@@ -71,4 +72,5 @@ div.square {
 		{{- end }}
 	</div>
 
+	{{- end }}
 {{- end }}

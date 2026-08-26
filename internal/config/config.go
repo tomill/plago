@@ -17,6 +17,7 @@ var version = "(development)"
 type ExecParams struct {
 	Input   string    `arg:"--in,required"          help:"Fetcher module (dummy, bluesky, discord, feed, twitter, twlist, slack, youtube and stdin)"`
 	Output  string    `arg:"--out"   default:"json" help:"Flusher module (json, gmail)"`
+	Filter  string    `arg:"--filter"               help:"Set API endpoint to filter entries before output"`
 	Hours   int       `arg:"--hours" default:"1"    placeholder:"1"   help:"Fetch entries from the previous N hours. Shortcut for --since and --until"`
 	Since   time.Time `arg:"--since"                placeholder:"\"2026-07-25T12:00:00+09:00\""`
 	Until   time.Time `arg:"--until"                placeholder:"\"2026-07-25T13:00:00+09:00\""`
@@ -25,10 +26,21 @@ type ExecParams struct {
 }
 
 func (c ExecParams) String() string {
-	return fmt.Sprintf("--in %s --out %s --since '%s' --until '%s'",
+	s := fmt.Sprintf("--in %s --out %s --since '%s' --until '%s'",
 		c.Input, c.Output,
 		c.Since.Format(time.RFC3339), c.Until.Format(time.RFC3339),
 	)
+	if c.Subject != "" {
+		s += fmt.Sprintf(" --subject '%s'", c.Subject)
+	}
+	if c.RefID != "" {
+		s += fmt.Sprintf(" --refid %s", c.RefID)
+	}
+	if c.Filter != "" {
+		s += fmt.Sprintf(" --filter '%s'", c.Filter)
+	}
+
+	return s
 }
 
 type Config struct {

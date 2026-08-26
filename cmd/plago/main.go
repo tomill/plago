@@ -9,6 +9,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/tomill/plago/internal/config"
+	"github.com/tomill/plago/internal/filter"
 	"github.com/tomill/plago/internal/input"
 	"github.com/tomill/plago/internal/output"
 )
@@ -40,6 +41,11 @@ func run(c config.Config) error {
 		return fmt.Errorf("invalid --out %q (available %v)", c.Output, lo.Keys(output.FlusherRegistry))
 	}
 
+	filter, ok := filter.New(c.Filter)
+	if !ok {
+		return fmt.Errorf("invalid --filter %q", c.Filter)
+	}
+
 	in, err := fetcher(c)
 	if err != nil {
 		return err
@@ -56,11 +62,16 @@ func run(c config.Config) error {
 		return err
 	}
 
+	log.Printf("plago fetched %d entries from %s", len(timeline.Entries), c.Input)
 	if len(timeline.Entries) == 0 {
-		log.Printf("plago fetched 0 entry from %s", c.Input)
 		return nil
 	}
 
-	log.Printf("plago fetched %d entries from %s. flushing them to %s ...", len(timeline.Entries), c.Input, c.Output)
+	if filter != nil {
+		log.Printf("plago filters entries by %s", c.Filter)
+		filter.Filter(&timeline)
+	}
+
+	log.Printf("plago flushing %d entries to %s ...", len(timeline.Entries), c.Output)
 	return out.Flush(timeline)
 }

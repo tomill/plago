@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"sort"
 	"time"
+
+	"github.com/samber/lo"
 )
 
 type Timeline struct {
@@ -44,6 +46,10 @@ func (t *Timeline) AppendError(err error) {
 }
 
 func (t *Timeline) Sorted() Timeline {
+	t.Entries = lo.Filter(t.Entries, func(e Entry, _ int) bool {
+		return !e.IsZero()
+	})
+
 	sort.Slice(t.Entries, func(i, j int) bool {
 		e1, e2 := t.Entries[i], t.Entries[j]
 
@@ -70,4 +76,12 @@ func (entry *Entry) AddImage(url string) {
 func (entry *Entry) AddAttachment(a Entry) *Entry {
 	entry.Attachments = append(entry.Attachments, &a)
 	return &a
+}
+
+func (entry *Entry) IsZero() bool {
+	return entry.Timestamp.IsZero() &&
+		entry.URL == "" &&
+		entry.Text == "" &&
+		len(entry.Images) == 0 &&
+		len(entry.Attachments) == 0
 }
