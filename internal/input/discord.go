@@ -13,26 +13,22 @@ import (
 
 type Discord struct {
 	config.ExecParams
-	client   *discordgo.Session
-	target   config.List
-	channels *cache[DiscordChannel]
-	users    *cache[string]
-}
-
-type DiscordChannel struct {
-	ChannelID   string
-	ChannelName string
-	ServerID    string
-	ServerName  string
+	client     *discordgo.Session
+	channelIDs []string
+	users      *cache[string]
 }
 
 func DiscordFetcher(c config.Config) (Fetcher, error) {
 	p := &Discord{
 		ExecParams: c.ExecParams,
 		client:     lo.Must(discordgo.New(c.DiscordToken)),
-		target:     c.DiscordChannels,
-		channels:   &cache[DiscordChannel]{},
+		channelIDs: c.DiscordChannelIDs,
 		users:      &cache[string]{},
+	}
+	if p.channelIDs == nil {
+		for _, ch := range c.DiscordChannels {
+			p.channelIDs = append(p.channelIDs, ch.ChannelID)
+		}
 	}
 
 	return p, nil
@@ -41,7 +37,7 @@ func DiscordFetcher(c config.Config) (Fetcher, error) {
 func (p Discord) Fetch() (plago.Timeline, error) {
 	timeline := newTimeline(p.ExecParams)
 
-	for _, channelID := range p.target {
+	for _, channelID := range p.channelIDs {
 		messages, err := p.client.ChannelMessages(channelID, 100, "", "", "", discordgo.WithClient(httpClient))
 		if err != nil {
 			timeline.AppendError(err)
@@ -110,26 +106,31 @@ func (p Discord) build(post *discordgo.Message) *plago.Entry {
 	return entry
 }
 
+type DiscordChannel struct {
+	ChannelID   string
+	ChannelName string
+	ServerID    string
+	ServerName  string
+}
+
 func (p Discord) channel(cid string) DiscordChannel {
-	return p.channels.get(cid, func() DiscordChannel {
-		ch := DiscordChannel{ChannelID: cid}
+	ch := DiscordChannel{ChannelID: cid}
 
-		channel, err := p.client.Channel(cid)
-		if err != nil {
-			return ch
-		}
-
-		ch.ChannelName = "#" + channel.Name
-		ch.ServerID = channel.GuildID
-
-		server, err := p.client.Guild(channel.GuildID)
-		if err != nil {
-			return ch
-		}
-
-		ch.ServerName = server.Name
+	channel, err := p.client.Channel(cid)
+	if err != nil {
 		return ch
-	})
+	}
+
+	ch.ChannelName = "#" + channel.Name
+	ch.ServerID = channel.GuildID
+
+	server, err := p.client.Guild(channel.GuildID)
+	if err != nil {
+		return ch
+	}
+
+	ch.ServerName = server.Name
+	return ch
 }
 
 func (p Discord) name(sid, uid, fallback string) string {

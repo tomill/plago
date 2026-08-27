@@ -16,16 +16,10 @@ import (
 
 type Slack struct {
 	config.ExecParams
-	workspace string
-	client    *slack.Client
-	target    config.List
-	channels  *cache[SlackChannel]
-	users     map[string]string
-}
-
-type SlackChannel struct {
-	ChannelID   string
-	ChannelName string
+	workspace  string
+	client     *slack.Client
+	channelIDs []string
+	users      map[string]string
 }
 
 func SlackFetcher(c config.Config) (Fetcher, error) {
@@ -33,8 +27,12 @@ func SlackFetcher(c config.Config) (Fetcher, error) {
 		ExecParams: c.ExecParams,
 		workspace:  c.SlackWorkspace,
 		client:     slack.New(c.SlackToken, slack.OptionHTTPClient(httpClient)),
-		target:     c.SlackChannelIDs,
-		channels:   &cache[SlackChannel]{},
+		channelIDs: c.SlackChannelIDs,
+	}
+	if p.channelIDs == nil {
+		for _, ch := range c.SlackChannels {
+			p.channelIDs = append(p.channelIDs, ch.ChannelID)
+		}
 	}
 
 	return p, nil
@@ -45,7 +43,7 @@ func (p Slack) Fetch() (plago.Timeline, error) {
 
 	p.users = lo.Must(p.getUsers())
 
-	for _, channelID := range p.target {
+	for _, channelID := range p.channelIDs {
 		ch := p.channel(channelID)
 
 		log.Printf("slack GetConversationHistory() %s %s ...", ch.ChannelID, ch.ChannelName)
@@ -127,29 +125,32 @@ func (p Slack) time(ts string) time.Time {
 	return time.Unix(int64(i), 0).In(tz)
 }
 
+type SlackChannel struct {
+	ChannelID   string
+	ChannelName string
+}
+
 func (p Slack) channel(cid string) SlackChannel {
-	return p.channels.get(cid, func() SlackChannel {
-		ch := SlackChannel{ChannelID: cid}
-		channel, err := p.client.GetConversationInfo(&slack.GetConversationInfoInput{
-			ChannelID:     cid,
-			IncludeLocale: false,
-		})
-		if err != nil {
-			ch.ChannelName = fmt.Sprintf("<%s>", cid)
-			return ch
-		}
-
-		prefix := "#"
-		switch {
-		case channel.IsPrivate:
-			prefix = "$"
-		case channel.IsGroup:
-			prefix = "%"
-		}
-
-		ch.ChannelName = prefix + channel.Name
-		return ch
+	ch := SlackChannel{ChannelID: cid}
+	channel, err := p.client.GetConversationInfo(&slack.GetConversationInfoInput{
+		ChannelID:     cid,
+		IncludeLocale: false,
 	})
+	if err != nil {
+		ch.ChannelName = fmt.Sprintf("<%s>", cid)
+		return ch
+	}
+
+	prefix := "#"
+	switch {
+	case channel.IsPrivate:
+		prefix = "$"
+	case channel.IsGroup:
+		prefix = "%"
+	}
+
+	ch.ChannelName = prefix + channel.Name
+	return ch
 }
 
 var (
