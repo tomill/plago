@@ -16,7 +16,7 @@ import (
 )
 
 type APIFilter struct {
-	URL url.URL
+	URL *url.URL
 }
 
 func (p *APIFilter) Filter(timeline *plago.Timeline) {

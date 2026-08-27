@@ -25,12 +25,7 @@ func YoutubeFetcher(c config.Config) (Fetcher, error) {
 		client: lo.Must(youtube.NewService(context.Background(),
 			option.WithAPIKey(c.YoutubeAPIKey),
 		)),
-		channelIDs: c.YoutubeChannelIDs,
-	}
-	if p.channelIDs == nil {
-		for _, ch := range c.YoutubeChannels {
-			p.channelIDs = append(p.channelIDs, ch.ChannelID)
-		}
+		channelIDs: lo.Must(channelIDsEither(c.YoutubeChannelIDs, c.YoutubeChannels)),
 	}
 
 	return p, nil
@@ -44,6 +39,10 @@ func (p *Youtube) Fetch() (plago.Timeline, error) {
 			Id(channelID).Do()
 		if err != nil {
 			timeline.AppendError(err)
+			continue
+		}
+		if len(ch.Items) == 0 {
+			timeline.AppendError(fmt.Errorf("no contentDetails for channel %s", channelID))
 			continue
 		}
 

@@ -27,18 +27,13 @@ func SlackFetcher(c config.Config) (Fetcher, error) {
 		ExecParams: c.ExecParams,
 		workspace:  c.SlackWorkspace,
 		client:     slack.New(c.SlackToken, slack.OptionHTTPClient(httpClient)),
-		channelIDs: c.SlackChannelIDs,
-	}
-	if p.channelIDs == nil {
-		for _, ch := range c.SlackChannels {
-			p.channelIDs = append(p.channelIDs, ch.ChannelID)
-		}
+		channelIDs: lo.Must(channelIDsEither(c.SlackChannelIDs, c.SlackChannels)),
 	}
 
 	return p, nil
 }
 
-func (p Slack) Fetch() (plago.Timeline, error) {
+func (p *Slack) Fetch() (plago.Timeline, error) {
 	timeline := newTimeline(p.ExecParams)
 
 	p.users = lo.Must(p.getUsers())
@@ -67,7 +62,7 @@ func (p Slack) Fetch() (plago.Timeline, error) {
 	return timeline.Sorted(), nil
 }
 
-func (p Slack) build(ch SlackChannel, post slack.Message) *plago.Entry {
+func (p *Slack) build(ch SlackChannel, post slack.Message) *plago.Entry {
 	ts := p.time(post.Timestamp)
 
 	entry := &plago.Entry{
@@ -107,9 +102,9 @@ func (p Slack) build(ch SlackChannel, post slack.Message) *plago.Entry {
 			if v.Pretext != "" {
 				entry.Text += " " + p.text(v.Pretext)
 			}
-			entry.AddAttachment(plago.Entry{Text: p.text(v.Title) + "\n" + p.text(v.Text)})
+			entry.AddAttachment(&plago.Entry{Text: p.text(v.Title) + "\n" + p.text(v.Text)})
 		} else if v.Fallback != "" {
-			entry.AddAttachment(plago.Entry{Text: p.text(v.Fallback)})
+			entry.AddAttachment(&plago.Entry{Text: p.text(v.Fallback)})
 		}
 	}
 
@@ -120,7 +115,7 @@ func (p Slack) build(ch SlackChannel, post slack.Message) *plago.Entry {
 	return entry
 }
 
-func (p Slack) time(ts string) time.Time {
+func (p *Slack) time(ts string) time.Time {
 	i, _ := strconv.ParseFloat(ts, 64)
 	return time.Unix(int64(i), 0).In(tz)
 }
@@ -130,7 +125,7 @@ type SlackChannel struct {
 	ChannelName string
 }
 
-func (p Slack) channel(cid string) SlackChannel {
+func (p *Slack) channel(cid string) SlackChannel {
 	ch := SlackChannel{ChannelID: cid}
 	channel, err := p.client.GetConversationInfo(&slack.GetConversationInfoInput{
 		ChannelID:     cid,
@@ -158,7 +153,7 @@ var (
 	reGithubImage = regexp.MustCompile(`(https://private-user-images.githubusercontent.com/[^?]+\?jwt=)\S+`)
 )
 
-func (p Slack) text(s string) string {
+func (p *Slack) text(s string) string {
 	s = strings.ReplaceAll(s, "```", "")
 	s = reGithubImage.ReplaceAllString(s, `$1`)
 
@@ -190,7 +185,7 @@ func (p Slack) text(s string) string {
 	})
 }
 
-func (p Slack) getUsers() (map[string]string, error) {
+func (p *Slack) getUsers() (map[string]string, error) {
 	users := map[string]string{}
 	defer func() {
 		log.Printf("%d vuser(s)", len(users))

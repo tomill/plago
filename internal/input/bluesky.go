@@ -46,7 +46,7 @@ func BlueskyFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-func (p Bluesky) Fetch() (plago.Timeline, error) {
+func (p *Bluesky) Fetch() (plago.Timeline, error) {
 	timeline := newTimeline(p.ExecParams)
 
 	res, err := bsky.FeedGetTimeline(context.Background(), p.client, "reverse-chronological", "", 100)
@@ -60,7 +60,7 @@ func (p Bluesky) Fetch() (plago.Timeline, error) {
 	return timeline.Sorted(), nil
 }
 
-func (p Bluesky) build(feed *bsky.FeedDefs_FeedViewPost) *plago.Entry {
+func (p *Bluesky) build(feed *bsky.FeedDefs_FeedViewPost) *plago.Entry {
 	post, ok := feed.Post.Record.Val.(*bsky.FeedPost)
 	if !ok {
 		return nil
@@ -79,7 +79,7 @@ func (p Bluesky) build(feed *bsky.FeedDefs_FeedViewPost) *plago.Entry {
 			feed.Post.Author.Handle,
 			feed.Post.Uri[strings.LastIndex(feed.Post.Uri, "/"):],
 		),
-		User: *feed.Post.Author.DisplayName,
+		User: lo.FromPtrOr(feed.Post.Author.DisplayName, p.handle(feed.Post.Author.Handle)),
 		Text: p.text(post),
 	}
 
@@ -90,7 +90,7 @@ func (p Bluesky) build(feed *bsky.FeedDefs_FeedViewPost) *plago.Entry {
 
 	if feed.Reason != nil && feed.Reason.FeedDefs_ReasonRepost != nil {
 		entry.Text = fmt.Sprintf(`RT @%s: %s`, p.handle(feed.Post.Author.Handle), entry.Text)
-		entry.User = *feed.Reason.FeedDefs_ReasonRepost.By.DisplayName
+		entry.User = lo.FromPtrOr(feed.Reason.FeedDefs_ReasonRepost.By.DisplayName, p.handle(feed.Reason.FeedDefs_ReasonRepost.By.Handle))
 	}
 
 	if embed := feed.Post.Embed; embed != nil {
@@ -108,7 +108,7 @@ func (p Bluesky) build(feed *bsky.FeedDefs_FeedViewPost) *plago.Entry {
 	return entry
 }
 
-func (p Bluesky) embed(entry *plago.Entry, embed any) {
+func (p *Bluesky) embed(entry *plago.Entry, embed any) {
 	switch v := embed.(type) {
 	case *bsky.EmbedImages_View:
 		for _, media := range v.Images {
@@ -119,7 +119,7 @@ func (p Bluesky) embed(entry *plago.Entry, embed any) {
 			entry.AddImage(*v.Thumbnail)
 		}
 	case *bsky.EmbedExternal_View:
-		a := entry.AddAttachment(plago.Entry{Text: v.External.Title})
+		a := entry.AddAttachment(&plago.Entry{Text: v.External.Title})
 		if !strings.Contains(entry.Text, v.External.Uri) {
 			a.URL = v.External.Uri
 		}
@@ -145,13 +145,13 @@ func (p Bluesky) embed(entry *plago.Entry, embed any) {
 	}
 }
 
-func (p Bluesky) quoted(entry *plago.Entry, v *bsky.EmbedRecord_ViewRecord) {
+func (p *Bluesky) quoted(entry *plago.Entry, v *bsky.EmbedRecord_ViewRecord) {
 	post, ok := v.Value.Val.(*bsky.FeedPost)
 	if !ok {
 		return
 	}
 
-	a := entry.AddAttachment(plago.Entry{
+	a := entry.AddAttachment(&plago.Entry{
 		Text: fmt.Sprintf(`%s: %s`, p.handle(v.Author.Handle), post.Text),
 	})
 	for _, v := range v.Embeds {
@@ -165,7 +165,7 @@ func (p Bluesky) quoted(entry *plago.Entry, v *bsky.EmbedRecord_ViewRecord) {
 	}
 }
 
-func (p Bluesky) handle(s string) string {
+func (p *Bluesky) handle(s string) string {
 	if name, ok := strings.CutSuffix(s, ".bsky.social"); ok {
 		return name
 	}
@@ -177,7 +177,7 @@ func (p Bluesky) handle(s string) string {
 	return s
 }
 
-func (p Bluesky) text(post *bsky.FeedPost) string {
+func (p *Bluesky) text(post *bsky.FeedPost) string {
 	text := post.Text
 	if len(post.Facets) == 0 {
 		return text

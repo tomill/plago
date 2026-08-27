@@ -1,3 +1,4 @@
+local env = std.native('env');
 local must_env = std.native('must_env');
 
 local list_flatten(s) =
@@ -21,7 +22,8 @@ local list_flatten(s) =
       BLUESKY_HANDLE: must_env('BLUESKY_HANDLE'),
       BLUESKY_APPPASS: must_env('BLUESKY_APPPASS'),
       DISCORD_TOKEN: must_env('DISCORD_TOKEN'),
-      DISCORD_CHANNELS: list_flatten(must_env('DISCORD_CHANNELS')),
+      DISCORD_CHANNELS: list_flatten(env('DISCORD_CHANNELS', default='')),
+      DISCORD_CHANNELS_SHEET: env('DISCORD_CHANNELS_SHEET', default=''),
       FEEDREADER_TOKEN: must_env('FEEDREADER_TOKEN'),
       TWITTER_CONSUMER_KEY: must_env('TWITTER_CONSUMER_KEY'),
       TWITTER_CONSUMER_SECRET: must_env('TWITTER_CONSUMER_SECRET'),
@@ -31,11 +33,14 @@ local list_flatten(s) =
       TWITTER_LISTS: must_env('TWITTER_LISTS'),
       SLACK_TOKEN: must_env('SLACK_TOKEN'),
       SLACK_WORKSPACE: must_env('SLACK_WORKSPACE'),
-      SLACK_CHANNELS: list_flatten(must_env('SLACK_CHANNELS')),
+      SLACK_CHANNELS: list_flatten(env('SLACK_CHANNELS', default='')),
+      SLACK_CHANNELS_SHEET: env('SLACK_CHANNELS_SHEET', default=''),
       YOUTUBE_API_KEY: must_env('YOUTUBE_API_KEY'),
-      YOUTUBE_CHANNELS: list_flatten(must_env('YOUTUBE_CHANNELS')),
+      YOUTUBE_CHANNELS: list_flatten(env('YOUTUBE_CHANNELS', default='')),
+      YOUTUBE_CHANNELS_SHEET: env('YOUTUBE_CHANNELS_SHEET', default=''),
       GMAIL_ADDRESS: must_env('GMAIL_ADDRESS'),
       GMAIL_APPPASS: must_env('GMAIL_APPPASS'),
+      SHEET_CREDENTIALS: env('SHEET_CREDENTIALS', default=''),
     }
   }
 }

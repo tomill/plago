@@ -37,7 +37,7 @@ func GmailFlusher(c config.Config) (Flusher, error) {
 	}, nil
 }
 
-func (p Gmail) Flush(timeline plago.Timeline) error {
+func (p *Gmail) Flush(timeline plago.Timeline) error {
 	if len(timeline.Entries) == 0 {
 		return nil
 	}
@@ -75,7 +75,7 @@ var (
 	reUtmTracker = regexp.MustCompile(`[?&]utm_[a-zA-Z0-9_]+=[^&]*`)
 )
 
-func (p Gmail) body(timeline plago.Timeline) (string, error) {
+func (p *Gmail) body(timeline plago.Timeline) (string, error) {
 	var buff strings.Builder
 	if err := p.template().Execute(&buff, timeline); err != nil {
 		return "", err
@@ -94,7 +94,7 @@ func (p Gmail) body(timeline plago.Timeline) (string, error) {
 //go:embed gmail_template.tmpl
 var defaultTemplate string
 
-func (p Gmail) template() *template.Template {
+func (p *Gmail) template() *template.Template {
 	funcs := template.FuncMap{
 		"max": func(max int, text string) string {
 			return runewidth.Truncate(text, max, "…")

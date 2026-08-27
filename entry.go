@@ -28,16 +28,16 @@ type Entry struct {
 	Attachments []*Entry  `json:"attachments,omitempty"`
 }
 
-func (t *Timeline) Append(entry *Entry) {
+func (timeline *Timeline) Append(entry *Entry) {
 	if entry != nil {
-		t.Entries = append(t.Entries, *entry)
+		timeline.Entries = append(timeline.Entries, *entry)
 	}
 }
 
-func (t *Timeline) AppendError(err error) {
+func (timeline *Timeline) AppendError(err error) {
 	_, file, line, _ := runtime.Caller(1)
 
-	t.Entries = append(t.Entries, Entry{
+	timeline.Entries = append(timeline.Entries, Entry{
 		Channel:     "Error",
 		Timestamp:   time.Now(),
 		Text:        err.Error(),
@@ -45,13 +45,14 @@ func (t *Timeline) AppendError(err error) {
 	})
 }
 
-func (t *Timeline) Sorted() Timeline {
-	t.Entries = lo.Filter(t.Entries, func(e Entry, _ int) bool {
+func (timeline *Timeline) Sorted() Timeline {
+	sorted := *timeline
+	sorted.Entries = lo.Filter(timeline.Entries, func(e Entry, _ int) bool {
 		return !e.IsZero()
 	})
 
-	sort.Slice(t.Entries, func(i, j int) bool {
-		e1, e2 := t.Entries[i], t.Entries[j]
+	sort.Slice(sorted.Entries, func(i, j int) bool {
+		e1, e2 := sorted.Entries[i], sorted.Entries[j]
 
 		if e1.Section != e2.Section {
 			return e1.Section < e2.Section
@@ -66,16 +67,16 @@ func (t *Timeline) Sorted() Timeline {
 		return e1.Timestamp.Before(e2.Timestamp)
 	})
 
-	return *t
+	return sorted
 }
 
 func (entry *Entry) AddImage(url string) {
 	entry.Images = append(entry.Images, url)
 }
 
-func (entry *Entry) AddAttachment(a Entry) *Entry {
-	entry.Attachments = append(entry.Attachments, &a)
-	return &a
+func (entry *Entry) AddAttachment(a *Entry) *Entry {
+	entry.Attachments = append(entry.Attachments, a)
+	return a
 }
 
 func (entry *Entry) IsZero() bool {

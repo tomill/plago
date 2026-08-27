@@ -26,7 +26,7 @@ func TwListFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-func (p TwList) Fetch() (plago.Timeline, error) {
+func (p *TwList) Fetch() (plago.Timeline, error) {
 	timeline := newTimeline(p.ExecParams)
 
 	for _, listID := range p.target {
@@ -56,7 +56,7 @@ func (p TwList) Fetch() (plago.Timeline, error) {
 			var quit bool
 			for _, tw := range res.Raw.TweetDictionaries() {
 				ts, _ := time.Parse(time.RFC3339, tw.Tweet.CreatedAt)
-				if ts.Before(p.ExecParams.Since) {
+				if ts.Before(p.Since) {
 					quit = true
 					break
 				}

@@ -18,6 +18,7 @@ func init() {
 	retry := retryablehttp.NewClient()
 	retry.RetryMax = 2
 	retry.RetryWaitMin = 2 * time.Second
+	retry.HTTPClient.Timeout = 5 * time.Minute
 	retry.Logger = hclog.New(&hclog.LoggerOptions{
 		Name:       "http-client",
 		Level:      hclog.Info,

@@ -22,7 +22,7 @@ func TestSheet(t *testing.T) {
 	err := actual.UnmarshalText([]byte("https://docs.google.com/spreadsheets/d/1WUpe_O9Vs623EPuELGudnNBZgE-C1rTtY_jPJ_9XJyQ/edit?gid=267698540#gid=267698540"))
 	assert.NoError(t, err)
 
-	expected := []Detective{
+	expected := Sheet[Detective]{
 		{Author: "横溝正史", Name: "金田一耕助", Created: 0},
 		{Author: "青山剛昌", Name: "江戸川コナン", Created: 0},
 	}

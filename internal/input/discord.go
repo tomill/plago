@@ -15,26 +15,21 @@ type Discord struct {
 	config.ExecParams
 	client     *discordgo.Session
 	channelIDs []string
-	users      *cache[string]
+	users      cache[string]
 }
 
 func DiscordFetcher(c config.Config) (Fetcher, error) {
 	p := &Discord{
 		ExecParams: c.ExecParams,
 		client:     lo.Must(discordgo.New(c.DiscordToken)),
-		channelIDs: c.DiscordChannelIDs,
-		users:      &cache[string]{},
-	}
-	if p.channelIDs == nil {
-		for _, ch := range c.DiscordChannels {
-			p.channelIDs = append(p.channelIDs, ch.ChannelID)
-		}
+		channelIDs: lo.Must(channelIDsEither(c.DiscordChannelIDs, c.DiscordChannels)),
+		users:      cache[string]{},
 	}
 
 	return p, nil
 }
 
-func (p Discord) Fetch() (plago.Timeline, error) {
+func (p *Discord) Fetch() (plago.Timeline, error) {
 	timeline := newTimeline(p.ExecParams)
 
 	for _, channelID := range p.channelIDs {
@@ -55,7 +50,7 @@ var (
 	reMarkdownEscape = regexp.MustCompile(`\\([_*\[\]()~` + "`" + `>#+\-=|{}.!])`)
 )
 
-func (p Discord) build(post *discordgo.Message) *plago.Entry {
+func (p *Discord) build(post *discordgo.Message) *plago.Entry {
 	ts := post.Timestamp.In(tz)
 	if !timeinrange(ts, p.ExecParams) {
 		return nil
@@ -77,7 +72,7 @@ func (p Discord) build(post *discordgo.Message) *plago.Entry {
 		if strings.HasPrefix(v.ContentType, "image/") {
 			entry.AddImage(v.ProxyURL)
 		} else {
-			entry.AddAttachment(plago.Entry{Text: v.URL + "\n" + v.Filename})
+			entry.AddAttachment(&plago.Entry{Text: v.URL + "\n" + v.Filename})
 		}
 	}
 
@@ -95,7 +90,7 @@ func (p Discord) build(post *discordgo.Message) *plago.Entry {
 		if title == "" && v.Author != nil {
 			title = v.Author.Name
 		}
-		a := entry.AddAttachment(plago.Entry{
+		a := entry.AddAttachment(&plago.Entry{
 			Text: title + "\n" + reMarkdownEscape.ReplaceAllString(v.Description, "$1"),
 		})
 		if v.Thumbnail != nil {
@@ -113,7 +108,7 @@ type DiscordChannel struct {
 	ServerName  string
 }
 
-func (p Discord) channel(cid string) DiscordChannel {
+func (p *Discord) channel(cid string) DiscordChannel {
 	ch := DiscordChannel{ChannelID: cid}
 
 	channel, err := p.client.Channel(cid)
@@ -133,7 +128,7 @@ func (p Discord) channel(cid string) DiscordChannel {
 	return ch
 }
 
-func (p Discord) name(sid, uid, fallback string) string {
+func (p *Discord) name(sid, uid, fallback string) string {
 	return p.users.get(uid, func() string {
 		member, err := p.client.GuildMember(sid, uid)
 		if err == nil && member.Nick != "" {
@@ -147,6 +142,6 @@ var (
 	reEmoji = regexp.MustCompile(`<(:[^:]+:)\d+>`)
 )
 
-func (p Discord) text(s string) string {
+func (p *Discord) text(s string) string {
 	return reEmoji.ReplaceAllString(s, `$1`)
 }

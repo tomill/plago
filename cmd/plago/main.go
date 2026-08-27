@@ -17,7 +17,7 @@ import (
 func main() {
 	defer func() {
 		if err := recover(); err != nil {
-			slog.Error(err.(error).Error(), "stack", string(debug.Stack()))
+		 	slog.Error(fmt.Sprintf("%v", err), "stack", string(debug.Stack()))
 			os.Exit(1)
 		}
 	}()

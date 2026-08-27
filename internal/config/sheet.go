@@ -15,6 +15,10 @@ import (
 type Sheet[T any] []T
 
 func (l *Sheet[T]) UnmarshalText(b []byte) error {
+	if len(b) == 0 {
+		return nil
+	}
+
 	srv, err := sheets.NewService(context.Background(),
 		option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(os.Getenv("SHEET_CREDENTIALS"))),
 	)
@@ -83,7 +87,7 @@ func getValues[T any](srv *sheets.Service, sid, tab string) ([]T, error) {
 				if val == "" {
 					break
 				}
-				fields = append(fields, val.(string))
+				fields = append(fields, fmt.Sprint(val))
 			}
 			continue
 		}
