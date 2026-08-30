@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/mail"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -15,14 +16,15 @@ import (
 var version = "(development)"
 
 type ExecParams struct {
-	Input   string    `arg:"--in,required"            help:"Fetcher module (dummy, bluesky, discord, feed, twitter, twlist, slack, youtube and stdin)"`
+	Input   string    `arg:"--in,required"            help:"Fetcher module (dummy, url, bluesky, discord, feed, twitter, twlist, slack, youtube and stdin). Set as timeline.Source value"`
 	Output  string    `arg:"--out"    default:"json"  help:"Flusher module (json, gmail)"`
+	URL     *url.URL  `arg:"--url"                    help:"URL to fetch when --in url"`
 	Filter  string    `arg:"--filter"                 help:"Set the API endpoint used to filter entries before output"`
 	Hours   int       `arg:"--hours"  default:"1"     help:"Fetch entries from the previous N hours. Shortcut for --since and --until"`
 	Since   time.Time `arg:"--since"  placeholder:"\"2026-07-25T12:00:00+09:00\""`
 	Until   time.Time `arg:"--until"  placeholder:"\"2026-07-25T13:00:00+09:00\""`
-	Subject string    `arg:"--subject"                help:"Used when --out gmail  Defaults to --since in YYYY-MM-DD format"`
-	RefID   string    `arg:"--refid"                  help:"Used when --out gmail  Additional References Header keys besides --subject"`
+	Subject string    `arg:"--subject"                help:"Set as timeline.Subject and Used with --out gmail. Defaults to --since in YYYY-MM-DD format"`
+	RefID   string    `arg:"--refid"                  help:"Set as timeline.RefID and Used when --out gmail. Additional References keys besides --subject"`
 }
 
 type Config struct {

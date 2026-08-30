@@ -11,6 +11,7 @@ type Fetcher interface {
 
 var FetcherRegistry = map[string]func(config.Config) (Fetcher, error){
 	"dummy":   DummyFetcher,
+	"url":     URLFetcher,
 	"stdin":   StdinFetcher,
 	"feed":    FeedFetcher,
 	"twitter": TwitterFetcher,

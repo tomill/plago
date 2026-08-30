@@ -16,7 +16,7 @@ import (
 )
 
 type APIFilter struct {
-	URL *url.URL
+	url *url.URL
 }
 
 func (p *APIFilter) Filter(timeline *plago.Timeline) {
@@ -56,7 +56,7 @@ func (p *APIFilter) process(ctx context.Context, entry plago.Entry) (*plago.Entr
 	var payload bytes.Buffer
 	_ = json.NewEncoder(&payload).Encode(entry)
 
-	req, _ := http.NewRequestWithContext(ctx, "POST", p.URL.String(), &payload)
+	req, _ := http.NewRequestWithContext(ctx, "POST", p.url.String(), &payload)
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)

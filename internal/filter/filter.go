@@ -16,7 +16,7 @@ func New(filter string) (Filter, bool) {
 	}
 
 	if u, err := url.Parse(filter); err == nil && u.Scheme == "https" {
-		return &APIFilter{URL: u}, true
+		return &APIFilter{url: u}, true
 	}
 
 	return nil, false

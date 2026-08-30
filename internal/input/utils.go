@@ -22,7 +22,7 @@ func newTimeline(c config.ExecParams) plago.Timeline {
 		Source:  c.Input,
 		Subject: c.Subject,
 		RefID:   c.RefID,
-		Entries: []plago.Entry{},
+		Entries: make([]plago.Entry, 0),
 	}
 }
 

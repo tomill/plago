@@ -22,11 +22,7 @@ func StdinFetcher(c config.Config) (Fetcher, error) {
 }
 
 func (p *Stdin) Fetch() (plago.Timeline, error) {
-	timeline := plago.Timeline{
-		Source:  "stdin",
-		Entries: make([]plago.Entry, 0),
-	}
-
+	timeline := newTimeline(p.ExecParams)
 	err := json.NewDecoder(os.Stdin).Decode(&timeline)
 	return timeline, err
 }
