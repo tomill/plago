@@ -15,7 +15,7 @@ func TestTwitter(t *testing.T) {
 	if os.Getenv("TWITTER_CONSUMER_KEY") == "" {
 		t.Skip("env TWITTER_xxx not set")
 	}
-	
+
 	f, err := TwitterFetcher(config.Config{
 		Since:                 time.Time{},
 		Until:                 time.Now(),

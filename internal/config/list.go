@@ -8,6 +8,10 @@ import (
 type List []string
 
 func (l *List) UnmarshalText(b []byte) error {
+	if len(b) == 0 {
+		return nil
+	}
+
 	for v := range strings.SplitSeq(string(b), "\n") {
 		v, _, _ = strings.Cut(v, "#")
 

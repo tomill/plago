@@ -7,12 +7,24 @@ import (
 )
 
 func TestList(t *testing.T) {
-	l := List{}
-	err := l.UnmarshalText([]byte(`
+	tests := []struct {
+		input    string
+		expected []string
+	}{
+		{"", []string{}},
+		{
+			input: `
 ch1 # channel name
-ch2
+	ch2
 ch3, ch4`,
-	))
-	assert.NoError(t, err)
-	assert.Equal(t, List{"ch1", "ch2", "ch3", "ch4"}, l)
+			expected: []string{"ch1", "ch2", "ch3", "ch4"}},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			l := List{}
+			err := l.UnmarshalText([]byte(test.input))
+			assert.NoError(t, err)
+			assert.Equal(t, List(test.expected), l)
+		})
+	}
 }

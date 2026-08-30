@@ -74,7 +74,7 @@ var twOptions = struct {
 	},
 }
 
-func (p Twitter) Fetch() (plago.Timeline, error) {
+func (p *Twitter) Fetch() (plago.Timeline, error) {
 	timeline := newTimeline(p.ExecParams)
 
 	res, err := p.client.UserTweetReverseChronologicalTimeline(context.Background(), p.userID,
@@ -96,7 +96,7 @@ func (p Twitter) Fetch() (plago.Timeline, error) {
 	return timeline.Sorted(), nil
 }
 
-func (p Twitter) build(post *twitter.TweetDictionary) *plago.Entry {
+func (p *Twitter) build(post *twitter.TweetDictionary) *plago.Entry {
 	ts, _ := time.Parse(time.RFC3339, post.Tweet.CreatedAt)
 	ts = ts.In(tz)
 	if !timeinrange(ts, p.ExecParams) {
@@ -126,7 +126,7 @@ func (p Twitter) build(post *twitter.TweetDictionary) *plago.Entry {
 			entry.Images = a.Images
 			entry.Attachments = a.Attachments
 		case "quoted":
-			a := entry.AddAttachment(plago.Entry{
+			a := entry.AddAttachment(&plago.Entry{
 				Text: rt.TweetDictionary.Tweet.Text,
 			})
 			p.expand(a, rt.TweetDictionary)
@@ -137,13 +137,13 @@ func (p Twitter) build(post *twitter.TweetDictionary) *plago.Entry {
 	return entry
 }
 
-func (p Twitter) expand(entry *plago.Entry, post *twitter.TweetDictionary) {
+func (p *Twitter) expand(entry *plago.Entry, post *twitter.TweetDictionary) {
 	if note := post.Tweet.NoteTweet; note != nil {
 		entry.Text = runewidth.Truncate(note.Text, 300, " […]")
 	}
 
 	if att := post.Tweet.Attachments; att != nil && len(att.PollIDs) > 0 {
-		entry.AddAttachment(plago.Entry{Text: "📊 [poll]"})
+		entry.AddAttachment(&plago.Entry{Text: "📊 [poll]"})
 	}
 
 	if ent := post.Tweet.Entities; ent != nil {
@@ -166,7 +166,7 @@ func (p Twitter) expand(entry *plago.Entry, post *twitter.TweetDictionary) {
 			entry.Text = strings.ReplaceAll(entry.Text, url.URL, to)
 
 			if url.Title != "" {
-				a := entry.AddAttachment(plago.Entry{
+				a := entry.AddAttachment(&plago.Entry{
 					Text: url.Title,
 				})
 				if len(url.Images) > 1 {

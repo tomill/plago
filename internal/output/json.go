@@ -19,6 +19,6 @@ func JSONFlusher(c config.Config) (Flusher, error) {
 	return &JSON{enc}, nil
 }
 
-func (p JSON) Flush(timeline plago.Timeline) error {
+func (p *JSON) Flush(timeline plago.Timeline) error {
 	return p.json.Encode(timeline)
 }

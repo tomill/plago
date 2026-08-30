@@ -15,8 +15,8 @@ import (
 
 type Youtube struct {
 	config.ExecParams
-	client *youtube.Service
-	target config.List
+	client     *youtube.Service
+	channelIDs []string
 }
 
 func YoutubeFetcher(c config.Config) (Fetcher, error) {
@@ -25,7 +25,7 @@ func YoutubeFetcher(c config.Config) (Fetcher, error) {
 		client: lo.Must(youtube.NewService(context.Background(),
 			option.WithAPIKey(c.YoutubeAPIKey),
 		)),
-		target: c.YoutubeChannelIDs,
+		channelIDs: lo.Must(channelIDsEither(c.YoutubeChannelIDs, c.YoutubeChannels)),
 	}
 
 	return p, nil
@@ -34,11 +34,15 @@ func YoutubeFetcher(c config.Config) (Fetcher, error) {
 func (p *Youtube) Fetch() (plago.Timeline, error) {
 	timeline := newTimeline(p.ExecParams)
 
-	for _, channelID := range p.target {
+	for _, channelID := range p.channelIDs {
 		ch, err := p.client.Channels.List([]string{"contentDetails"}).
 			Id(channelID).Do()
 		if err != nil {
 			timeline.AppendError(err)
+			continue
+		}
+		if len(ch.Items) == 0 {
+			timeline.AppendError(fmt.Errorf("no contentDetails for channel %s", channelID))
 			continue
 		}
 

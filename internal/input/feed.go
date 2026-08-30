@@ -29,7 +29,7 @@ func FeedFetcher(c config.Config) (Fetcher, error) {
 	return p, nil
 }
 
-func (p Feed) Fetch() (plago.Timeline, error) {
+func (p *Feed) Fetch() (plago.Timeline, error) {
 	timeline := newTimeline(p.ExecParams)
 
 	var itemIDs []string
@@ -119,7 +119,7 @@ var (
 	reFirstImageURL = regexp.MustCompile(`<img\s+[^>]*src="(https://[^"]+)"`)
 )
 
-func (p Feed) build(item feedItem) *plago.Entry {
+func (p *Feed) build(item feedItem) *plago.Entry {
 	if !timeinrange(time.UnixMilli(item.CrawlTimeMsec), p.ExecParams) {
 		return nil
 	}
@@ -150,7 +150,7 @@ func (p Feed) build(item feedItem) *plago.Entry {
 		img = append(img, m[1])
 	}
 	if len(img) > 0 {
-		entry.AddAttachment(plago.Entry{Images: img})
+		entry.AddAttachment(&plago.Entry{Images: img})
 	}
 
 	return entry
