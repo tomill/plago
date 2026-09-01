@@ -28,9 +28,8 @@ jobs:
         run: |
           set -euo pipefail
           sed -i '/^## Options$/q' README.md
-          echo "```" >> README.md
+          echo '```' >> README.md
           go run cmd/plago/main.go --help | tail -n +4 >> README.md
-          echo "```" >> README.md
 
       - name: Check diff
         id: diff
