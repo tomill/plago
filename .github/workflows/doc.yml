@@ -5,7 +5,9 @@ on:
       - synchronize
       - ready_for_review
     paths:
+      - .github/workflows/doc.yml
       - internal/config/config.go
+      - README.md
 
 jobs:
   update-readme:
@@ -27,7 +29,7 @@ jobs:
           set -euo pipefail
           sed -i '/^## Options$/q' README.md
           echo "```" >> README.md
-          go run main.go --help | tail -n +4 >> README.md
+          go run cmd/plago/main.go --help | tail -n +4 >> README.md
           echo "```" >> README.md
 
       - name: Check diff
